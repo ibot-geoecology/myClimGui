@@ -21,7 +21,8 @@ Imports:
     myClim,
     shiny,
     purrr,
-    stringr
+    stringr,
+    plotly
 Roxygen: list(markdown = TRUE)
 Suggests:
     testthat (>= 3.0.0)
