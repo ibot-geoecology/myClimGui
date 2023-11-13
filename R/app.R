@@ -1,12 +1,18 @@
 mcg_run <- function (data) {
-    ui <- shiny::fluidPage(
-        shiny::sidebarLayout(
-            shiny::sidebarPanel(
-                shinyTree::shinyTree("data_tree", checkbox=TRUE, search=TRUE, theme="proton", themeIcons=FALSE)
-            ),
-            shiny::mainPanel(
-                plotly::plotlyOutput("plot")
-            )
+    sidebar_width <- 250
+    
+    ui <- shiny::fillPage(
+        shiny::tags$style(type="text/css",
+            stringr::str_glue(".sidebar {{width: {sidebar_width}px; float: left; padding-left: 10px; }}"),
+            stringr::str_glue(".main {{width: calc(100% - {sidebar_width}px); float: right; }}")),
+        shiny::div(
+            class="sidebar",
+            shiny::selectInput("facet_selectbox", "Facet", c("NULL", "locality", "physical"), selected="physical", width=stringr::str_glue("{sidebar_width-30}px")),
+            shinyTree::shinyTree("data_tree", checkbox=TRUE, search=TRUE, theme="proton", themeIcons=FALSE),
+        ),
+        shiny::div(
+            class="main",
+            plotly::plotlyOutput("plot", width="100%", height="100vh"),
         )
     )
 
@@ -20,7 +26,8 @@ mcg_run <- function (data) {
             } else {
                 slices <- shinyTree::get_selected(data_tree, format="slices")
                 filtered_data <- .tree_filter_data(data, slices)
-                plotly::ggplotly(myClim::mc_plot_line(filtered_data))
+                facet <- if(input$facet_selectbox == "NULL") NULL else input$facet_selectbox
+                plotly::ggplotly(myClim::mc_plot_line(filtered_data, facet=facet))
             }
         })
     }
