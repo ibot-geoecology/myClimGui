@@ -2,7 +2,7 @@
 % Please edit documentation in R/app.R
 \name{mcg_run}
 \alias{mcg_run}
-\title{Start shine app}
+\title{Start shiny app}
 \usage{
 mcg_run(data)
 }

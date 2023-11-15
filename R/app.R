@@ -1,4 +1,9 @@
-#' Start shine app
+app_state <- new.env()
+app_state$prev_slices <- ""
+app_state$facet <- ""
+app_state$plot <- NULL
+
+#' Start shiny app
 #'
 #' Main function, which start shiny application.
 #'
@@ -31,9 +36,18 @@ mcg_run <- function (data) {
                 return(NULL)
             } else {
                 slices <- shinyTree::get_selected(data_tree, format="slices")
+                slices_character <- .tree_selected_to_vector(slices)
+                selected_facet_text <- input$facet_selectbox
+                if(length(slices) == 0 ||
+                   (all(app_state$prev_slices == slices_character) && selected_facet_text == app_state$facet)) {
+                    return(app_state$plot)
+                }
+                app_state$prev_slices <- slices_character
+                app_state$facet <- selected_facet_text
                 filtered_data <- .tree_filter_data(data, slices)
-                facet <- if(input$facet_selectbox == "NULL") NULL else input$facet_selectbox
-                plotly::ggplotly(myClim::mc_plot_line(filtered_data, facet=facet))
+                facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
+                app_state$plot <- plotly::ggplotly(myClim::mc_plot_line(filtered_data, facet=facet))
+                return(app_state$plot)
             }
         })
     }

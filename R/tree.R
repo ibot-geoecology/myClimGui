@@ -72,3 +72,24 @@
     
     return(result)
 }
+
+.tree_selected_to_vector <- function(selected) {
+    item_function <- function(value) {
+        result <- NULL
+        repeat {
+            if(length(value) == 0 || is.null(names(value))) {
+                break
+            } else if(length(value) == 1) {
+                result <- c(result, names(value)[[1]])
+                value <- value[[1]]
+            } else {
+                stop("Problem")
+            }
+        }
+        return(paste(result, collapse="$"))
+    }
+
+    result <- sort(purrr::map_chr(selected, item_function))
+
+    return(result)
+}

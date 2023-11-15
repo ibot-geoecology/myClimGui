@@ -21,3 +21,12 @@ test_that(".tree_filter_data", {
     expect_equal(length(filtered_agg_data$localities$A1E05$sensors), 3)
     expect_equal(length(filtered_agg_data$localities$A2E32$sensors), 4)
 })
+
+test_that(".tree_selected_to_vector", {
+    selected_raw <- readRDS("../data/tree/selected_raw.rds")
+    selected_items <- .tree_selected_to_vector(selected_raw)
+    expect_equal(length(selected_items), 11)
+    selected_agg <- readRDS("../data/tree/selected_agg.rds")
+    selected_items <- .tree_selected_to_vector(selected_agg)
+    expect_equal(length(selected_items), 8)
+})
