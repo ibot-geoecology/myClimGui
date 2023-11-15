@@ -1,3 +1,9 @@
+#' Start shine app
+#'
+#' Main function, which start shiny application.
+#'
+#' @param data myClim data
+#' @export
 mcg_run <- function (data) {
     sidebar_width <- 250
     
