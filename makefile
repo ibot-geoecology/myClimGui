@@ -21,5 +21,5 @@ check:
 	R --vanilla --no-multiarch -e 'devtools::check()'
 
 run-dev:
-	R -e 'devtools::load_all(); mcg_run(myClim::mc_data_example_agg)'
+	R -e 'devtools::load_all(); mcg_run(myClim::mc_data_example_agg, port=8989)'
 

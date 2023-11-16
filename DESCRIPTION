@@ -21,6 +21,7 @@ Depends:
 Imports:
     myClim,
     shiny,
+    shinyjs,
     shinyTree,
     purrr,
     stringr,
