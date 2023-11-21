@@ -6,17 +6,23 @@
 #' @export
 mcg_run <- function (data, ...) {
     sidebar_width <- 250
-    
+    date_range <- .data_get_date_range(data)
     ui <- shiny::fillPage(
         shiny::tags$style(type="text/css",
-            stringr::str_glue(".sidebar {{width: {sidebar_width}px; float: left; padding-left: 10px; }}"),
+            stringr::str_glue(".sidebar {{width: {sidebar_width}px; float: left; padding-left: 10px; height: 100%; overflow: scroll; }}"),
             stringr::str_glue(".main {{width: calc(100% - {sidebar_width}px); float: right; }}")),
         shinyjs::useShinyjs(),
         shiny::div(
             class="sidebar",
             shiny::selectInput("facet_select", "Facet", c("NULL", "locality", "physical"), selected="physical", width=stringr::str_glue("{sidebar_width-30}px")),
             shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
-            shiny::actionButton("refresh_button", "Refresh", width=stringr::str_glue("{sidebar_width-30}px")),
+            shiny::dateRangeInput("date_range", "Date range", start=date_range[[1]], end=date_range[[2]],
+                                  width=stringr::str_glue("{sidebar_width-30}px")),
+            shiny::actionButton("reset_button", "Reset", width=stringr::str_glue("{sidebar_width-30}px")),
+            shiny::br(),
+            shiny::br(),
+            shiny::actionButton("refresh_button", "Show", width=stringr::str_glue("{sidebar_width-30}px"),
+                                style="background-color: green; color: white; font-weight: bold"),
             shiny::br(),
             shiny::br(),
             shinyTree::shinyTree("data_tree", checkbox=TRUE, search=TRUE, theme="proton", themeIcons=FALSE)
@@ -38,9 +44,14 @@ mcg_run <- function (data, ...) {
                 shinyjs::show(id="plot_ggplot")
                 shinyjs::hide(id="plot_plotly")
             }
-            #shinyjs::click("refresh_button")
         })
-        
+
+        observeEvent(input$reset_button, {
+            date_range <- .data_get_date_range(data)
+            shiny::updateDateRangeInput(session, "date_range",
+                                        start=date_range[[1]], end=date_range[[2]])
+        })
+
         output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})
         
         output$plot_plotly <- plotly::renderPlotly({
@@ -69,6 +80,7 @@ mcg_run <- function (data, ...) {
 .app_get_plot <- function(data, input)
 {
     data_tree <- input$data_tree
+    date_range <- input$date_range
     selected_facet_text <- input$facet_select
     if(is.null(data_tree)) {
         return(NULL)
@@ -79,7 +91,7 @@ mcg_run <- function (data, ...) {
         }
         filtered_data <- .tree_filter_data(data, slices)
         facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
-        plot <- myClim::mc_plot_line(filtered_data, facet=facet)
+        plot <- myClim::mc_plot_line(filtered_data, facet=facet, start_crop=date_range[[1]], end_crop=date_range[[2]])
         return(plot)
     }
 }

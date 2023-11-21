@@ -1,7 +1,7 @@
 Package: myClimGui
 Type: Package
 Title: GUI fo myClim package
-Version: 0.0.2
+Version: 0.0.3
 Authors@R: c(
     person("Matěj", "Man", email = "Matej.Man@ibot.cas.cz", role = "aut"),
     person("Vojtěch", "Kalčík", email = "Vojtech.Kalcik@ibot.cas.cz", role = c("aut", "cre")),
@@ -25,7 +25,9 @@ Imports:
     shinyTree,
     purrr,
     stringr,
-    plotly
+    lubridate,
+    plotly,
+    ggplot2
 Roxygen: list(markdown = TRUE)
 Suggests:
     rmarkdown,
