@@ -73,23 +73,21 @@
     return(result)
 }
 
-.tree_selected_to_vector <- function(selected) {
-    item_function <- function(value) {
-        result <- NULL
-        repeat {
-            if(length(value) == 0 || is.null(names(value))) {
-                break
-            } else if(length(value) == 1) {
-                result <- c(result, names(value)[[1]])
-                value <- value[[1]]
-            } else {
-                stop("Problem")
-            }
+.tree_change_selection <- function(tree, sensor, add) {
+    node_function <- function(name, node) {
+        if(name == sensor) {
+            attr(node, "stselected") <- add
         }
-        return(paste(result, collapse="$"))
+        if(!is.numeric(node))
+        {
+            result <- purrr::map2(names(node), node, node_function)
+            attributes(result) <- attributes(node)
+            node <- result
+        }
+        return(node)
     }
 
-    result <- sort(purrr::map_chr(selected, item_function))
-
+    result <- purrr::map2(names(tree), tree, node_function)
+    attributes(result) <- attributes(tree)
     return(result)
 }

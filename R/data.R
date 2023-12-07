@@ -4,3 +4,8 @@
     end_date <- lubridate::ceiling_date(max(info$end_date)+1, unit="day")
     return(c(start_date, end_date))
 }
+
+.data_get_sensors <- function(data) {
+    info <- myClim::mc_info(data)
+    return(unique(info$sensor_name))
+}

@@ -1,2 +1,6 @@
+^.idea$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^LICENSE\.md$
+^debug.R$
+^makefile$

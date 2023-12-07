@@ -5,8 +5,11 @@
 #' @param data myClim data
 #' @export
 mcg_run <- function (data, ...) {
-    sidebar_width <- 250
+    sidebar_width <- 300
+    widget_space <- 30
     date_range <- .data_get_date_range(data)
+    state <- new.env()
+    state$selected_sesnors <- list()
     ui <- shiny::fillPage(
         shiny::tags$style(type="text/css",
             stringr::str_glue(".sidebar {{width: {sidebar_width}px; float: left; padding-left: 10px; height: 100%; overflow: scroll; }}"),
@@ -14,18 +17,19 @@ mcg_run <- function (data, ...) {
         shinyjs::useShinyjs(),
         shiny::div(
             class="sidebar",
-            shiny::selectInput("facet_select", "Facet", c("NULL", "locality", "physical"), selected="physical", width=stringr::str_glue("{sidebar_width-30}px")),
-            shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
-            shiny::dateRangeInput("date_range", "Date range", start=date_range[[1]], end=date_range[[2]],
-                                  width=stringr::str_glue("{sidebar_width-30}px")),
-            shiny::actionButton("reset_button", "Reset", width=stringr::str_glue("{sidebar_width-30}px")),
-            shiny::br(),
-            shiny::br(),
-            shiny::actionButton("refresh_button", "Show", width=stringr::str_glue("{sidebar_width-30}px"),
+            shiny::actionButton("refresh_button", "Show", width=stringr::str_glue("{sidebar_width - widget_space}px"),
                                 style="background-color: green; color: white; font-weight: bold"),
-            shiny::br(),
-            shiny::br(),
-            shinyTree::shinyTree("data_tree", checkbox=TRUE, search=TRUE, theme="proton", themeIcons=FALSE)
+            shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
+            shiny::selectInput("facet_select", "Facet", c("NULL", "locality", "physical"), selected="physical",
+                               width=stringr::str_glue("{sidebar_width-widget_space}px")),
+            shiny::div(style="display: inline-block; vertical-align: top; ",
+                       shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]],
+                                             width=stringr::str_glue("{sidebar_width-widget_space-50}px"))),
+            shiny::div(style="display: inline-block; vertical-align: top; ",
+                       shiny::actionButton("reset_button", NULL, icon=shiny::icon("refresh"), width="50px")),
+            shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width=stringr::str_glue("{sidebar_width-30}px"),
+                               multiple=TRUE),
+            shinyTree::shinyTree("data_tree", checkbox=TRUE, search=TRUE, theme="proton", themeIcons=FALSE),
         ),
         shiny::div(
             class="main",
@@ -46,10 +50,26 @@ mcg_run <- function (data, ...) {
             }
         })
 
-        observeEvent(input$reset_button, {
+        shiny::observeEvent(input$reset_button, {
             date_range <- .data_get_date_range(data)
             shiny::updateDateRangeInput(session, "date_range",
                                         start=date_range[[1]], end=date_range[[2]])
+        })
+
+        shiny::observeEvent(input$sensor_select, {
+            tree <- shiny::isolate(input$data_tree)
+            if(is.null(tree)) {
+                tree <- .tree_get_list(data)
+            }
+            add_sensor <- length(input$sensor_select) > length(state$selected_sensors)
+            if(add_sensor) {
+                sensor <- lubridate::setdiff(input$sensor_select, state$selected_sensors)
+            }
+            else {
+                sensor <- lubridate::setdiff(state$selected_sensors, input$sensor_select)
+            }
+            shinyTree::updateTree(session, "data_tree", .tree_change_selection(tree, sensor, add_sensor))
+            state$selected_sensors <- input$sensor_select
         })
 
         output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})

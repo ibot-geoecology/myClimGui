@@ -22,11 +22,13 @@ test_that(".tree_filter_data", {
     expect_equal(length(filtered_agg_data$localities$A2E32$sensors), 4)
 })
 
-test_that(".tree_selected_to_vector", {
-    selected_raw <- readRDS("../data/tree/selected_raw.rds")
-    selected_items <- .tree_selected_to_vector(selected_raw)
-    expect_equal(length(selected_items), 11)
-    selected_agg <- readRDS("../data/tree/selected_agg.rds")
-    selected_items <- .tree_selected_to_vector(selected_agg)
-    expect_equal(length(selected_items), 8)
+test_that(".tree_change_sensor", {
+    tree <- readRDS("../data/tree/tree.rds")
+    expect_true(is.null(attr(tree$A2E32$TMS_T1, "stselected")))
+    tree <- .tree_change_selection(tree, "TMS_T1", TRUE)
+    expect_true(attr(tree$A2E32$TMS_T1, "stselected"))
+    expect_true(attr(tree$A6W79$TMS_T1, "stselected"))
+    tree <- .tree_change_selection(tree, "TMS_T1", FALSE)
+    expect_false(attr(tree$A2E32$TMS_T1, "stselected"))
+    expect_false(attr(tree$A6W79$TMS_T1, "stselected"))
 })

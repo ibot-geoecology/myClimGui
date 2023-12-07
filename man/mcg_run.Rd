@@ -4,7 +4,7 @@
 \alias{mcg_run}
 \title{Start shiny app}
 \usage{
-mcg_run(data)
+mcg_run(data, ...)
 }
 \arguments{
 \item{data}{myClim data}
