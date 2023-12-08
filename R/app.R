@@ -8,8 +8,6 @@ mcg_run <- function (data, ...) {
     sidebar_width <- 300
     widget_space <- 30
     date_range <- .data_get_date_range(data)
-    state <- new.env()
-    state$selected_sesnors <- list()
     ui <- shiny::fillPage(
         shiny::tags$style(type="text/css",
             stringr::str_glue(".sidebar {{width: {sidebar_width}px; float: left; padding-left: 10px; height: 100%; overflow: scroll; }}"),
@@ -39,6 +37,8 @@ mcg_run <- function (data, ...) {
     )
 
     server <- function (input, output, session) {
+        previous_sensors <- shiny::reactiveVal()
+        
         shiny::observeEvent(input$plotly_checkbox, {
             use_plotly <- input$plotly_checkbox
             if(use_plotly) {
@@ -61,15 +61,15 @@ mcg_run <- function (data, ...) {
             if(is.null(tree)) {
                 tree <- .tree_get_list(data)
             }
-            add_sensor <- length(input$sensor_select) > length(state$selected_sensors)
+            add_sensor <- length(input$sensor_select) > length(previous_sensors())
             if(add_sensor) {
-                sensor <- lubridate::setdiff(input$sensor_select, state$selected_sensors)
+                sensor <- lubridate::setdiff(input$sensor_select, previous_sensors())
             }
             else {
-                sensor <- lubridate::setdiff(state$selected_sensors, input$sensor_select)
+                sensor <- lubridate::setdiff(previous_sensors(), input$sensor_select)
             }
             shinyTree::updateTree(session, "data_tree", .tree_change_selection(tree, sensor, add_sensor))
-            state$selected_sensors <- input$sensor_select
+            previous_sensors(input$sensor_select)
         })
 
         output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})

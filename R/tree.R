@@ -78,7 +78,7 @@
         if(name == sensor) {
             attr(node, "stselected") <- add
         }
-        if(!is.numeric(node))
+        if(is.list(node))
         {
             result <- purrr::map2(names(node), node, node_function)
             attributes(result) <- attributes(node)

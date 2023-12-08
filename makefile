@@ -1,4 +1,4 @@
-.PHONY: install, build, remove, generate, generate-source, generate-documentation, check, run-dev
+.PHONY: install, build, remove, generate, generate-source, generate-documentation, test, check, run-dev
 
 install: build
 	R -e 'install.packages("../myClimGui_latest.tar.gz", repos=NULL)'
@@ -16,6 +16,9 @@ generate-source:
 
 generate-documentation:
 	R -e 'devtools::document()'
+
+test:
+	R --vanilla -e 'devtools::test()'
 
 check:
 	R --vanilla --no-multiarch -e 'devtools::check()'
