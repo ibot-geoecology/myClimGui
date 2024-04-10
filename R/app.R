@@ -6,35 +6,52 @@
 #' @export
 mcg_run <- function (data, ...) {
     sidebar_width <- 300
-    widget_space <- 30
     date_range <- .data_get_date_range(data)
-    ui <- shiny::fillPage(
-        shiny::tags$style(type="text/css",
-            stringr::str_glue(".sidebar {{width: {sidebar_width}px; float: left; padding-left: 10px; height: 100%; overflow: scroll; }}"),
-            stringr::str_glue(".main {{width: calc(100% - {sidebar_width}px); float: right; }}")),
+    header <- shinydashboard::dashboardHeader(title = "myClimGui")
+    sidebar <- shinydashboard::dashboardSidebar(
         shinyjs::useShinyjs(),
-        shiny::div(
-            class="sidebar",
-            shiny::actionButton("refresh_button", "Show", width=stringr::str_glue("{sidebar_width - widget_space}px"),
-                                style="background-color: green; color: white; font-weight: bold"),
-            shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
-            shiny::selectInput("facet_select", "Facet", c("NULL", "locality", "physical"), selected="physical",
-                               width=stringr::str_glue("{sidebar_width-widget_space}px")),
-            shiny::div(style="display: inline-block; vertical-align: top; ",
-                       shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]],
-                                             width=stringr::str_glue("{sidebar_width-widget_space-50}px"))),
-            shiny::div(style="display: inline-block; vertical-align: top; ",
-                       shiny::actionButton("reset_button", NULL, icon=shiny::icon("refresh"), width="50px")),
-            shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width=stringr::str_glue("{sidebar_width-30}px"),
-                               multiple=TRUE),
-            shinyTree::shinyTree("data_tree", checkbox=TRUE, search=TRUE, theme="proton", themeIcons=FALSE),
+        shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width="100%",
+                           multiple=TRUE),
+        shinyTree::shinyTree("data_tree", checkbox=TRUE, theme="proton", themeIcons=FALSE),
+        width=stringr::str_glue("{sidebar_width}px")
+    )
+    body <- shinydashboard::dashboardBody(
+        shiny::fluidRow(
+            shiny::column(
+                shiny::actionButton("refresh_button", "Show", width="100%",
+                                    style="background-color: green; color: white; font-weight: bold"),
+                width = 2
+            ),
+            shiny::column(
+                shiny::selectInput("facet_select", NULL, c("NULL", "locality", "physical"), selected="physical",
+                                   width="100%"),
+                width = 2),
+            shiny::column(
+                shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
+                width = 2),
+            shiny::column(width = 2),
+            shiny::column(
+                shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]], width="100%"),
+                width = 3
+            ),
+            shiny::column(
+                shiny::actionButton("reset_button", NULL, icon=shiny::icon("refresh"), width="100%"),
+                width = 1
+            )
         ),
-        shiny::div(
-            class="main",
-            plotly::plotlyOutput("plot_plotly", width="100%", height="100vh"),
-            shiny::plotOutput("plot_ggplot", width="100%", height="100vh"),
+        shiny::fluidRow(
+            shiny::column(
+                shiny::tags$style(type = "text/css",
+                                  paste0("#plot_plotly {height: calc(100vh - 140px) !important;} ",
+                                         "#plot_ggplot {height: calc(100vh - 140px) !important;}")),
+                plotly::plotlyOutput("plot_plotly", width="100%"),
+                shiny::plotOutput("plot_ggplot", width="100%"),
+                width = 12
+            )
         )
     )
+
+    ui <- shinydashboard::dashboardPage(header, sidebar, body)
 
     server <- function (input, output, session) {
         previous_sensors <- shiny::reactiveVal()
