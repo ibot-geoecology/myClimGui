@@ -9,3 +9,11 @@
     info <- myClim::mc_info(data)
     return(unique(info$sensor_name))
 }
+
+.data_get_locality_logger_type <- function(data) {
+    info <- myClim::mc_info_logger(data)
+    info <- dplyr::select(info, .data$locality_id, .data$logger_type)
+    info <- dplyr::distinct(info)
+    info <- dplyr::arrange(info, .data$locality_id, .data$logger_type)
+    return(paste0(info$locality_id, ": ", info$logger_type))
+}

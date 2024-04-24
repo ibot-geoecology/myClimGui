@@ -10,9 +10,11 @@ mcg_run <- function (data, ...) {
     header <- shinydashboard::dashboardHeader(title = "myClimGui")
     sidebar <- shinydashboard::dashboardSidebar(
         shinyjs::useShinyjs(),
+        shiny::checkboxInput("multi_select_checkbox", "Multi select", value=TRUE),
         shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width="100%",
                            multiple=TRUE),
         shinyTree::shinyTree("data_tree", checkbox=TRUE, theme="proton", themeIcons=FALSE),
+        shiny::selectInput(names(data$localities)),
         width=stringr::str_glue("{sidebar_width}px")
     )
     body <- shinydashboard::dashboardBody(
@@ -29,7 +31,9 @@ mcg_run <- function (data, ...) {
             shiny::column(
                 shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
                 width = 2),
-            shiny::column(width = 2),
+            shiny::column(
+                shiny::checkboxInput("color_by_logger_checkbox", "Color by logger", value=FALSE),
+                width = 2),
             shiny::column(
                 shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]], width="100%"),
                 width = 3
@@ -65,6 +69,10 @@ mcg_run <- function (data, ...) {
                 shinyjs::show(id="plot_ggplot")
                 shinyjs::hide(id="plot_plotly")
             }
+        })
+
+        shiny::observeEvent(input$multi_select_checkbox, {
+            multi_select <- input$multi_select_checkbox
         })
 
         shiny::observeEvent(input$reset_button, {
@@ -128,7 +136,8 @@ mcg_run <- function (data, ...) {
         }
         filtered_data <- .tree_filter_data(data, slices)
         facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
-        plot <- myClim::mc_plot_line(filtered_data, facet=facet, start_crop=date_range[[1]], end_crop=date_range[[2]])
+        plot <- myClim::mc_plot_line(filtered_data, facet=facet, start_crop=date_range[[1]], end_crop=date_range[[2]],
+                                     color_by_logger=input$color_by_logger_checkbox)
         return(plot)
     }
 }
