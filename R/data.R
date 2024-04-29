@@ -11,9 +11,16 @@
 }
 
 .data_get_locality_logger_type <- function(data) {
+    if(myClim:::.common_is_agg_format(data)) {
+        result <- new.env()
+        purrr::walk(names(data$localities), ~ result[[.x]] <- .x)
+        return(result)
+    }
     info <- myClim::mc_info_logger(data)
     info <- dplyr::select(info, .data$locality_id, .data$logger_type)
     info <- dplyr::distinct(info)
-    info <- dplyr::arrange(info, .data$locality_id, .data$logger_type)
-    return(paste0(info$locality_id, ": ", info$logger_type))
+    items <- purrr::map2(info$locality_id, info$logger_type, ~ c(.x, .y))
+    names(items) <- paste0(info$locality_id, ": ", info$logger_type)
+    return(as.environment(items))
 }
+

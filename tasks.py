@@ -35,4 +35,4 @@ def test(c):
 
 @task
 def run_dev(c):
-    c.run("""R -e 'devtools::load_all(); mcg_run(myClim::mc_data_example_agg, port=8989)'""")
+    c.run("""R -e 'devtools::load_all(); mcg_run(myClim::mc_data_example_raw, port=8989)'""")
