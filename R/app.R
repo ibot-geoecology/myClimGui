@@ -26,6 +26,9 @@ mcg_run <- function (data, ...) {
 .app_get_sidebar_ui <- function(data, data_loggers) {
     shinydashboard::dashboardSidebar(
         shinyjs::useShinyjs(),
+        shiny::tags$style(
+            shiny::HTML(".sidebar {height: calc(100vh - 50px); overflow-y: auto; }")
+        ),
         shiny::checkboxInput("multi_select_checkbox", "Multi select", value=TRUE),
         shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width="100%",
                            multiple=TRUE),
@@ -132,6 +135,8 @@ mcg_run <- function (data, ...) {
     output$plot_plotly <- plotly::renderPlotly({
         input$data_loggers
         input$refresh_button
+        input$plotly_checkbox
+        input$multi_select_checkbox
         shiny::isolate(plot <- .app_get_plot(data, data_loggers, input))
         if(is.null(plot)) {
             return(NULL)
@@ -142,6 +147,8 @@ mcg_run <- function (data, ...) {
     output$plot_ggplot <- shiny::renderPlot({
         input$data_loggers
         input$refresh_button
+        input$plotly_checkbox
+        input$multi_select_checkbox
         shiny::isolate(plot <- .app_get_plot(data, data_loggers, input))
         if(is.null(plot)) {
             return(NULL)
