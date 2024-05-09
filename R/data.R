@@ -12,9 +12,9 @@
 
 .data_get_locality_logger_type <- function(data) {
     if(myClim:::.common_is_agg_format(data)) {
-        result <- new.env()
-        purrr::walk(names(data$localities), ~ result[[.x]] <- .x)
-        return(result)
+        result <- as.list(names(data$localities))
+        names(result) <- names(data$localities)
+        return(as.environment(result))
     }
     info <- myClim::mc_info_logger(data)
     info <- dplyr::select(info, .data$locality_id, .data$logger_type)

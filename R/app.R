@@ -72,7 +72,9 @@ mcg_run <- function (data, ...) {
                                   paste0("#plot_plotly {height: calc(100vh - 140px) !important;} ",
                                          "#plot_ggplot {height: calc(100vh - 140px) !important;}")),
                 plotly::plotlyOutput("plot_plotly", width="100%"),
-                shiny::plotOutput("plot_ggplot", width="100%"),
+                shiny::plotOutput("plot_ggplot", width="100%",
+                                  dblclick="plot_dblclick",
+                                  brush=shiny::brushOpts(id="plot_brush", resetOnNew=TRUE)),
                 width = 12
             )
         )
@@ -81,32 +83,13 @@ mcg_run <- function (data, ...) {
 
 .app_get_server <- function(data, data_loggers, input, output, session) {
     previous_sensors <- shiny::reactiveVal()
+    zoom_range <- shiny::reactiveVal()
 
     shiny::observeEvent(input$plotly_checkbox, {
-        use_plotly <- input$plotly_checkbox
-        if(use_plotly) {
-            shinyjs::show(id="plot_plotly")
-            shinyjs::hide(id="plot_ggplot")
-        } else {
-            shinyjs::show(id="plot_ggplot")
-            shinyjs::hide(id="plot_plotly")
-        }
+        .app_plotly_checkbox_event(input)
     })
 
-    shiny::observeEvent(input$multi_select_checkbox, {
-        multi_select <- input$multi_select_checkbox
-        if(multi_select) {
-            shinyjs::show(id="sensor_select")
-            shinyjs::show(id="data_tree")
-            shinyjs::hide(id="data_loggers")
-            shinyjs::enable(id="refresh_button")
-        } else {
-            shinyjs::hide(id="sensor_select")
-            shinyjs::hide(id="data_tree")
-            shinyjs::show(id="data_loggers")
-            shinyjs::disable(id="refresh_button")
-        }
-    })
+    shiny::observeEvent(input$multi_select_checkbox, .app_multi_select_checkbox_event(input))
 
     shiny::observeEvent(input$reset_button, {
         date_range <- .data_get_date_range(data)
@@ -115,29 +98,17 @@ mcg_run <- function (data, ...) {
     })
 
     shiny::observeEvent(input$sensor_select, {
-        tree <- shiny::isolate(input$data_tree)
-        if(is.null(tree)) {
-            tree <- .tree_get_list(data)
-        }
-        add_sensor <- length(input$sensor_select) > length(previous_sensors())
-        if(add_sensor) {
-            sensor <- lubridate::setdiff(input$sensor_select, previous_sensors())
-        }
-        else {
-            sensor <- lubridate::setdiff(previous_sensors(), input$sensor_select)
-        }
-        shinyTree::updateTree(session, "data_tree", .tree_change_selection(tree, sensor, add_sensor))
-        previous_sensors(input$sensor_select)
+        .app_sensor_select_event(input)
+    })
+    
+    shiny::observeEvent(input$plot_dblclick, {
+        .app_plot_dblclick_event(input)
     })
 
     output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})
 
     output$plot_plotly <- plotly::renderPlotly({
-        input$data_loggers
-        input$refresh_button
-        input$plotly_checkbox
-        input$multi_select_checkbox
-        shiny::isolate(plot <- .app_get_plot(data, data_loggers, input))
+        plot <- .app_render_plot_common(data, data_loggers, input)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -145,16 +116,71 @@ mcg_run <- function (data, ...) {
     })
 
     output$plot_ggplot <- shiny::renderPlot({
-        input$data_loggers
-        input$refresh_button
-        input$plotly_checkbox
-        input$multi_select_checkbox
-        shiny::isolate(plot <- .app_get_plot(data, data_loggers, input))
+        plot <- .app_render_plot_common(data, data_loggers, input)
         if(is.null(plot)) {
             return(NULL)
         }
         return(plot)
     })
+}
+
+.app_plotly_checkbox_event <- function(input) {
+    use_plotly <- input$plotly_checkbox
+    if(use_plotly) {
+        shinyjs::show(id="plot_plotly")
+        shinyjs::hide(id="plot_ggplot")
+    } else {
+        shinyjs::show(id="plot_ggplot")
+        shinyjs::hide(id="plot_plotly")
+    }
+}
+
+.app_multi_select_checkbox_event <- function(input) {
+    multi_select <- input$multi_select_checkbox
+    if(multi_select) {
+        shinyjs::show(id="sensor_select")
+        shinyjs::show(id="data_tree")
+        shinyjs::hide(id="data_loggers")
+        shinyjs::enable(id="refresh_button")
+    } else {
+        shinyjs::hide(id="sensor_select")
+        shinyjs::hide(id="data_tree")
+        shinyjs::show(id="data_loggers")
+        shinyjs::disable(id="refresh_button")
+    }
+}
+
+.app_sensor_select_event <- function(input) {
+    tree <- shiny::isolate(input$data_tree)
+    if(is.null(tree)) {
+        tree <- .tree_get_list(data)
+    }
+    add_sensor <- length(input$sensor_select) > length(previous_sensors())
+    if(add_sensor) {
+        sensor <- lubridate::setdiff(input$sensor_select, previous_sensors())
+    }
+    else {
+        sensor <- lubridate::setdiff(previous_sensors(), input$sensor_select)
+    }
+    shinyTree::updateTree(session, "data_tree", .tree_change_selection(tree, sensor, add_sensor))
+    previous_sensors(input$sensor_select)
+}
+
+.app_plot_dblclick_event <- function(input) {
+    brush <- input$plot_brush
+    range <- myClim:::.common_as_utc_posixct(c(brush$xmin, brush$xmax))
+    shiny::updateDateRangeInput(session, "date_range",
+                                start=date_range[[1]], end=date_range[[2]])
+}
+
+.app_render_plot_common <- function(data, data_loggers, input)
+{
+    input$data_loggers
+    input$refresh_button
+    input$plotly_checkbox
+    input$multi_select_checkbox
+    shiny::isolate(plot <- .app_get_plot(data, data_loggers, input))
+    return(plot)
 }
 
 .app_get_plot <- function(data, data_loggers, input)
