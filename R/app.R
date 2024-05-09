@@ -98,11 +98,11 @@ mcg_run <- function (data, ...) {
     })
 
     shiny::observeEvent(input$sensor_select, {
-        .app_sensor_select_event(input)
-    })
+            .app_sensor_select_event(input, previous_sensors)
+        })
     
     shiny::observeEvent(input$plot_dblclick, {
-        .app_plot_dblclick_event(input)
+       .app_plot_dblclick_event(input, zoom_range) 
     })
 
     output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})
@@ -116,7 +116,8 @@ mcg_run <- function (data, ...) {
     })
 
     output$plot_ggplot <- shiny::renderPlot({
-        plot <- .app_render_plot_common(data, data_loggers, input)
+        zoom_range_value <- zoom_range()
+        plot <- .app_render_plot_common(data, data_loggers, input, zoom_range_value)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -150,7 +151,7 @@ mcg_run <- function (data, ...) {
     }
 }
 
-.app_sensor_select_event <- function(input) {
+.app_sensor_select_event <- function(input, previous_sensors) {
     tree <- shiny::isolate(input$data_tree)
     if(is.null(tree)) {
         tree <- .tree_get_list(data)
@@ -166,28 +167,33 @@ mcg_run <- function (data, ...) {
     previous_sensors(input$sensor_select)
 }
 
-.app_plot_dblclick_event <- function(input) {
+.app_plot_dblclick_event <- function(input, zoom_range) {
     brush <- input$plot_brush
-    range <- myClim:::.common_as_utc_posixct(c(brush$xmin, brush$xmax))
-    shiny::updateDateRangeInput(session, "date_range",
-                                start=date_range[[1]], end=date_range[[2]])
+    if(is.null(brush)) {
+        zoom_range(NULL)
+    } else {
+        zoom_range(myClim:::.common_as_utc_posixct(c(brush$xmin, brush$xmax)))
+    }
 }
 
-.app_render_plot_common <- function(data, data_loggers, input)
+.app_render_plot_common <- function(data, data_loggers, input, zoom_range_value=NULL)
 {
     input$data_loggers
     input$refresh_button
     input$plotly_checkbox
     input$multi_select_checkbox
-    shiny::isolate(plot <- .app_get_plot(data, data_loggers, input))
+    shiny::isolate(plot <- .app_get_plot(data, data_loggers, input, zoom_range_value))
     return(plot)
 }
 
-.app_get_plot <- function(data, data_loggers, input)
+.app_get_plot <- function(data, data_loggers, input, zoom_range_value)
 {
     data_tree <- input$data_tree
     input_data_loggers <- input$data_loggers
     date_range <- input$date_range
+    if(!is.null(zoom_range_value)) {
+        date_range <- zoom_range_value
+    }
     selected_facet_text <- input$facet_select
     multi_select <- input$multi_select_checkbox
     if((multi_select && is.null(data_tree)) || (!multi_select && is.null(data_loggers))) {
