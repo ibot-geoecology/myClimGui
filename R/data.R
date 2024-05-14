@@ -24,3 +24,10 @@
     return(as.environment(items))
 }
 
+.data_get_filtered_data_table <- function(data) {
+    if(myClim:::.common_is_agg_format(data)) {
+        return(data.frame(locality_id=names(data$localities)))
+    }
+    result <- myClim::mc_info_logger(data)
+    return(dplyr::select(result, "locality_id", "index", "serial_number", "logger_type"))
+}

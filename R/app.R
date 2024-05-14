@@ -84,6 +84,7 @@ mcg_run <- function (data, ...) {
 .app_get_server <- function(data, data_loggers, input, output, session) {
     previous_sensors <- shiny::reactiveVal()
     zoom_range <- shiny::reactiveVal()
+    last_filtered_data_table <- shiny::reactiveVal()
 
     shiny::observeEvent(input$plotly_checkbox, {
         .app_plotly_checkbox_event(input)
@@ -108,7 +109,7 @@ mcg_run <- function (data, ...) {
     output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})
 
     output$plot_plotly <- plotly::renderPlotly({
-        plot <- .app_render_plot_common(data, data_loggers, input)
+        plot <- .app_render_plot_common(data, data_loggers, session, input, last_filtered_data_table)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -117,7 +118,7 @@ mcg_run <- function (data, ...) {
 
     output$plot_ggplot <- shiny::renderPlot({
         zoom_range_value <- zoom_range()
-        plot <- .app_render_plot_common(data, data_loggers, input, zoom_range_value)
+        plot <- .app_render_plot_common(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -176,17 +177,17 @@ mcg_run <- function (data, ...) {
     }
 }
 
-.app_render_plot_common <- function(data, data_loggers, input, zoom_range_value=NULL)
+.app_render_plot_common <- function(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value=NULL)
 {
     input$data_loggers
     input$refresh_button
     input$plotly_checkbox
     input$multi_select_checkbox
-    shiny::isolate(plot <- .app_get_plot(data, data_loggers, input, zoom_range_value))
+    shiny::isolate(plot <- .app_get_plot(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value))
     return(plot)
 }
 
-.app_get_plot <- function(data, data_loggers, input, zoom_range_value)
+.app_get_plot <- function(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value)
 {
     data_tree <- input$data_tree
     input_data_loggers <- input$data_loggers
@@ -213,9 +214,17 @@ mcg_run <- function (data, ...) {
         }
         filtered_data <- myClim::mc_filter(data, localities=selected_loggers[[1]], logger_types=logger_type)
     }
+    .app_reset_zoom_range_if_need(session, filtered_data, last_filtered_data_table)
     facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
     plot <- myClim::mc_plot_line(filtered_data, facet=facet, start_crop=date_range[[1]], end_crop=date_range[[2]],
                                  color_by_logger=input$color_by_logger_checkbox)
     return(plot)
 }
 
+.app_reset_zoom_range_if_need <- function(session, filtered_data, last_filtered_data_table) {
+    filtered_data_table <- .data_get_filtered_data_table(filtered_data)
+    if(isTRUE(all.equal(filtered_data_table, last_filtered_data_table()))){
+        return()
+    }
+    last_filtered_data_table(filtered_data_table)
+}
