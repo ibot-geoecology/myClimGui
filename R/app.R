@@ -140,7 +140,7 @@ mcg_run <- function (data, ...) {
 
 .app_process_settings_change <- function(input, previous_selected_settings, render_plot_number,
                                          zoom_range) {
-    is_init <- !is.null(previous_selected_settings()) && previous_selected_settings() == "init"
+    is_init <- length(previous_selected_settings()) == 1 && previous_selected_settings() == "init"
     changed_settings <- NULL
     if(!is_init){
         changed_settings <- .app_changed_settings(input, previous_selected_settings())
