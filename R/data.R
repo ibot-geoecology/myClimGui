@@ -1,7 +1,18 @@
-.data_get_date_range <- function(data) {
-    info <- myClim::mc_info(data)
-    start_date <- lubridate::floor_date(min(info$start_date), unit="day")
-    end_date <- lubridate::ceiling_date(max(info$end_date)+1, unit="day")
+.data_get_date_range <- function(data, round=NULL) {
+    if(myClim:::.common_is_agg_format(data)) {
+        start_date_values <- purrr::map_int(data$localities, ~ min(.x$datetime))
+        end_date_values <- purrr::map_int(data$localities, ~ max(.x$datetime))
+        table <- data.frame(start_date=myClim:::.common_as_utc_posixct(start_date_values),
+                            end_date=myClim:::.common_as_utc_posixct(end_date_values))
+    } else {
+        table <- myClim::mc_info_logger(data)
+    }
+    start_date <- min(table$start_date)
+    end_date <- max(table$end_date)
+    if(!is.null(round)) {
+        start_date <- lubridate::floor_date(start_date, unit=round)
+        end_date <- lubridate::floor_date(end_date, unit=round)
+    }
     return(c(start_date, end_date))
 }
 

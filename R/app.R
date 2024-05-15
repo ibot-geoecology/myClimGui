@@ -1,4 +1,7 @@
 .app_const_SIDEBAR_WIDTH <- 300
+.app_const_SETTINGS_PLOTLY_KEY <- "plotly"
+.app_const_SETTINGS_MULTI_SELECT_KEY <- "multi_select"
+.app_const_SETTINGS_COLOR_BY_LOGGER_KEY <- "color_by_logger"
 
 #' Start shiny app
 #'
@@ -29,17 +32,21 @@ mcg_run <- function (data, ...) {
         shiny::tags$style(
             shiny::HTML(".sidebar {height: calc(100vh - 50px); overflow-y: auto; }")
         ),
-        shiny::checkboxInput("multi_select_checkbox", "Multi select", value=TRUE),
+        shiny::checkboxGroupInput("settings_checkboxes", label=NULL,
+                                  choices=c("Multi select" = .app_const_SETTINGS_MULTI_SELECT_KEY,
+                                            "Plotly" = .app_const_SETTINGS_PLOTLY_KEY,
+                                            "Color by logger" = .app_const_SETTINGS_COLOR_BY_LOGGER_KEY),
+                                  selected=.app_const_SETTINGS_MULTI_SELECT_KEY),
         shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width="100%",
                            multiple=TRUE),
         shinyTree::shinyTree("data_tree", checkbox=TRUE, theme="proton", themeIcons=FALSE),
-        shiny::radioButtons("data_loggers", label=NULL, choices=names(data_loggers)),
+        shiny::radioButtons("data_loggers", label=NULL, choices=sort(names(data_loggers))),
         width=stringr::str_glue("{.app_const_SIDEBAR_WIDTH}px")
     )
 }
 
 .app_get_body_ui <- function(data) {
-    date_range <- .data_get_date_range(data)
+    date_range <- .data_get_date_range(data, "day")
     shinydashboard::dashboardBody(
         shiny::fluidRow(
             shiny::column(
@@ -51,12 +58,9 @@ mcg_run <- function (data, ...) {
                 shiny::selectInput("facet_select", NULL, c("NULL", "locality", "physical"), selected="physical",
                                    width="100%"),
                 width = 2),
-            shiny::column(
-                shiny::checkboxInput("plotly_checkbox", "Use plotly", value=FALSE),
-                width = 2),
-            shiny::column(
-                shiny::checkboxInput("color_by_logger_checkbox", "Color by logger", value=FALSE),
-                width = 2),
+            shiny::tagAppendAttributes(shiny::column(
+                shiny::textOutput("datetime_range"),
+                width = 4), class="text-center", style="font-weight: bold; "),
             shiny::column(
                 shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]], width="100%"),
                 width = 3
@@ -84,22 +88,24 @@ mcg_run <- function (data, ...) {
 .app_get_server <- function(data, data_loggers, input, output, session) {
     previous_sensors <- shiny::reactiveVal()
     zoom_range <- shiny::reactiveVal()
-    last_filtered_data_table <- shiny::reactiveVal()
+    previous_selected_settings <- shiny::reactiveVal("init")
+    render_plot_number <- shiny::reactiveVal(0)
+    last_datetime_range <- shiny::reactiveVal(NULL)
+    last_filtered_data_table <- shiny::reactiveVal(NULL)
 
-    shiny::observeEvent(input$plotly_checkbox, {
-        .app_plotly_checkbox_event(input)
-    })
-
-    shiny::observeEvent(input$multi_select_checkbox, .app_multi_select_checkbox_event(input))
+    shiny::observeEvent(input$settings_checkboxes, {
+        .app_process_settings_change(input, previous_selected_settings, render_plot_number,
+                                     zoom_range)
+    }, ignoreNULL = FALSE)
 
     shiny::observeEvent(input$reset_button, {
-        date_range <- .data_get_date_range(data)
+        date_range <- .data_get_date_range(data, "day")
         shiny::updateDateRangeInput(session, "date_range",
                                     start=date_range[[1]], end=date_range[[2]])
     })
 
     shiny::observeEvent(input$sensor_select, {
-            .app_sensor_select_event(input, previous_sensors)
+            .app_sensor_select_event(data, input, session, previous_sensors)
         })
     
     shiny::observeEvent(input$plot_dblclick, {
@@ -109,7 +115,8 @@ mcg_run <- function (data, ...) {
     output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})
 
     output$plot_plotly <- plotly::renderPlotly({
-        plot <- .app_render_plot_common(data, data_loggers, session, input, last_filtered_data_table)
+        plot <- .app_render_plot_common(data, data_loggers, session, input, render_plot_number,
+                                        last_datetime_range, zoom_range, last_filtered_data_table)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -118,16 +125,41 @@ mcg_run <- function (data, ...) {
 
     output$plot_ggplot <- shiny::renderPlot({
         zoom_range_value <- zoom_range()
-        plot <- .app_render_plot_common(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value)
+        plot <- .app_render_plot_common(data, data_loggers, session, input, render_plot_number,
+                                        last_datetime_range, zoom_range, last_filtered_data_table)
         if(is.null(plot)) {
             return(NULL)
         }
         return(plot)
+    }, res=96)
+    
+    output$datetime_range <- shiny::renderText({
+        .app_get_datetime_range(last_datetime_range)
     })
 }
 
+.app_process_settings_change <- function(input, previous_selected_settings, render_plot_number,
+                                         zoom_range) {
+    is_init <- !is.null(previous_selected_settings()) && previous_selected_settings() == "init"
+    changed_settings <- NULL
+    if(!is_init){
+        changed_settings <- .app_changed_settings(input, previous_selected_settings())
+        render_plot_number(render_plot_number()+1)
+        if(changed_settings$key == .app_const_SETTINGS_PLOTLY_KEY && changed_settings$value) {
+            zoom_range(NULL)
+        }
+    }
+    if(is_init || changed_settings$key == .app_const_SETTINGS_PLOTLY_KEY) {
+        .app_plotly_checkbox_event(input)
+    }
+    if(is_init || changed_settings$key == .app_const_SETTINGS_MULTI_SELECT_KEY) {
+        .app_multi_select_checkbox_event(input)
+    }
+    previous_selected_settings(input$settings_checkboxes)
+}
+
 .app_plotly_checkbox_event <- function(input) {
-    use_plotly <- input$plotly_checkbox
+    use_plotly <- .app_selected_settings(input, .app_const_SETTINGS_PLOTLY_KEY)
     if(use_plotly) {
         shinyjs::show(id="plot_plotly")
         shinyjs::hide(id="plot_ggplot")
@@ -138,7 +170,7 @@ mcg_run <- function (data, ...) {
 }
 
 .app_multi_select_checkbox_event <- function(input) {
-    multi_select <- input$multi_select_checkbox
+    multi_select <- .app_selected_settings(input, .app_const_SETTINGS_MULTI_SELECT_KEY)
     if(multi_select) {
         shinyjs::show(id="sensor_select")
         shinyjs::show(id="data_tree")
@@ -152,7 +184,7 @@ mcg_run <- function (data, ...) {
     }
 }
 
-.app_sensor_select_event <- function(input, previous_sensors) {
+.app_sensor_select_event <- function(data, input, session, previous_sensors) {
     tree <- shiny::isolate(input$data_tree)
     if(is.null(tree)) {
         tree <- .tree_get_list(data)
@@ -177,26 +209,42 @@ mcg_run <- function (data, ...) {
     }
 }
 
-.app_render_plot_common <- function(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value=NULL)
+.app_render_plot_common <- function(data, data_loggers, session, input, render_plot_number,
+                                    last_datetime_range, zoom_range, last_filtered_data_table)
 {
     input$data_loggers
     input$refresh_button
-    input$plotly_checkbox
-    input$multi_select_checkbox
-    shiny::isolate(plot <- .app_get_plot(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value))
+    input$facet_select
+    render_plot_number()
+    shiny::isolate(filtered_data <- .app_get_plot_data(data, data_loggers, input))
+    if(is.null(filtered_data)) {
+        return(NULL)
+    }
+    if(.app_reset_zoom_range_if_need(filtered_data, last_filtered_data_table, zoom_range)) {
+        return(NULL)
+    }
+    filtered_data <- .app_crop_plot_data(filtered_data,input, zoom_range)
+    last_datetime_range(.data_get_date_range(filtered_data))
+    shiny::isolate(plot <- .app_get_plot(filtered_data, input))
     return(plot)
 }
 
-.app_get_plot <- function(data, data_loggers, session, input, last_filtered_data_table, zoom_range_value)
+.app_crop_plot_data <- function(filtered_data,input, zoom_range)
+{
+    date_range <- input$date_range
+    date_range[[2]] <- date_range[[2]] + lubridate::days(1)
+    if(!is.null(zoom_range())) {
+        date_range <- zoom_range()
+    }
+    filtered_data <- myClim::mc_prep_crop(filtered_data, start=date_range[[1]], end=date_range[[2]])
+    return(filtered_data)
+}
+
+.app_get_plot_data <- function(data, data_loggers, input)
 {
     data_tree <- input$data_tree
     input_data_loggers <- input$data_loggers
-    date_range <- input$date_range
-    if(!is.null(zoom_range_value)) {
-        date_range <- zoom_range_value
-    }
-    selected_facet_text <- input$facet_select
-    multi_select <- input$multi_select_checkbox
+    multi_select <- .app_selected_settings(input, .app_const_SETTINGS_MULTI_SELECT_KEY)
     if((multi_select && is.null(data_tree)) || (!multi_select && is.null(data_loggers))) {
         return(NULL)
     }
@@ -214,17 +262,48 @@ mcg_run <- function (data, ...) {
         }
         filtered_data <- myClim::mc_filter(data, localities=selected_loggers[[1]], logger_types=logger_type)
     }
-    .app_reset_zoom_range_if_need(session, filtered_data, last_filtered_data_table)
+    return(filtered_data)
+}
+
+.app_get_plot <- function(data, input)
+{
+    selected_facet_text <- input$facet_select
     facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
-    plot <- myClim::mc_plot_line(filtered_data, facet=facet, start_crop=date_range[[1]], end_crop=date_range[[2]],
-                                 color_by_logger=input$color_by_logger_checkbox)
+    color_by_logger <- .app_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
+    plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger)
     return(plot)
 }
 
-.app_reset_zoom_range_if_need <- function(session, filtered_data, last_filtered_data_table) {
+.app_reset_zoom_range_if_need <- function(filtered_data, last_filtered_data_table, zoom_range) {
     filtered_data_table <- .data_get_filtered_data_table(filtered_data)
     if(isTRUE(all.equal(filtered_data_table, last_filtered_data_table()))){
-        return()
+        return(FALSE)
     }
     last_filtered_data_table(filtered_data_table)
+    if(!is.null(zoom_range())){
+        zoom_range(NULL)
+        return(TRUE)
+    }
+    return(FALSE)
+}
+
+.app_selected_settings <- function(input, key) {
+    result <- key %in% input$settings_checkboxes
+    return(result)
+}
+
+.app_changed_settings <- function(input, previous_selected_settings) {
+    new_selected <- setdiff(input$settings_checkboxes,  previous_selected_settings)
+    if(length(new_selected) == 1){
+        return(list(key=new_selected, value=TRUE))
+    }
+    new_unselected <- setdiff(previous_selected_settings, input$settings_checkboxes)
+    return(list(key=new_unselected, value=FALSE))
+}
+
+.app_get_datetime_range <- function(last_datetime_range){
+    if(is.null(last_datetime_range())){
+        return("")
+    }
+    return(stringr::str_glue("{last_datetime_range()[[1]]} - {last_datetime_range()[[2]]}"))
 }

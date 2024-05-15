@@ -2,7 +2,7 @@
 
 Install
 ```R
-requiered_packages <- c("purrr", "stringr", "lubridate", "plotly", "ggplot2", "myClim", "shiny", "shinyjs", "shinydashboard")
+requiered_packages <- c("purrr", "stringr", "lubridate", "plotly", "myClim", "shiny", "shinyjs", "shinydashboard", "dplyr")
 missing_packages <- requiered_packages[!(requiered_packages %in% installed.packages()[,"Package"])]
 if(length(missing_packages)) install.packages(missing_packages)
 
