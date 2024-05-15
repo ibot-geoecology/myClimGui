@@ -1,7 +1,7 @@
 Package: myClimGui
 Type: Package
 Title: GUI fo myClim package
-Version: 0.0.5
+Version: 0.1.0
 Authors@R: c(
     person("Matěj", "Man", email = "Matej.Man@ibot.cas.cz", role = "aut"),
     person("Vojtěch", "Kalčík", email = "Vojtech.Kalcik@ibot.cas.cz", role = c("aut", "cre")),
@@ -15,11 +15,11 @@ Description: GUI fo myClim package
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Depends:
     R (>= 3.5)
 Imports:
-    myClim,
+    myClim (>= 1.1.4),
     shiny,
     shinydashboard,
     shinyjs,
@@ -27,8 +27,8 @@ Imports:
     purrr,
     stringr,
     lubridate,
-    plotly,
-    ggplot2
+    dplyr,
+    plotly
 Roxygen: list(markdown = TRUE)
 Suggests:
     rmarkdown,

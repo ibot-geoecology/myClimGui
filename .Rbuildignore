@@ -3,4 +3,5 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^debug.R$
-^makefile$
+^tasks.py$
+^temp$
