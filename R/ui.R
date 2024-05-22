@@ -1,16 +1,21 @@
 .ui_get_main <- function(data, data_loggers) {
-    header <- shinydashboard::dashboardHeader(title = "myClimGui")
-    sidebar <- .ui_get_sidebar_ui(data, data_loggers)
-    body <- .ui_get_body_ui(data)
-
-    return(shinydashboard::dashboardPage(header, sidebar, body))
+    shiny::navbarPage("myClimGui",
+                      shiny::tabPanel("Plot",
+                        shiny::tags$style(
+                            shiny::HTML("#sidebar {height: calc(100vh - 95px); overflow-y: auto; }")),
+                        shiny::sidebarLayout(
+                            .ui_get_sidebar_ui(data, data_loggers),
+                            .ui_get_body_ui(data),
+                            position = c("left", "right"),
+                            fluid = TRUE
+                      )),
+                      shiny::tabPanel("States",
+                          
+                      ))
 }
 .ui_get_sidebar_ui <- function(data, data_loggers) {
-    shinydashboard::dashboardSidebar(
+    shiny::sidebarPanel(
         shinyjs::useShinyjs(),
-        shiny::tags$style(
-            shiny::HTML(".sidebar {height: calc(100vh - 50px); overflow-y: auto; }")
-        ),
         shiny::checkboxGroupInput("settings_checkboxes", label=NULL,
                                   choices=c("Multi select" = .app_const_SETTINGS_MULTI_SELECT_KEY,
                                             "Plotly" = .app_const_SETTINGS_PLOTLY_KEY,
@@ -20,13 +25,14 @@
                            multiple=TRUE),
         shinyTree::shinyTree("data_tree", checkbox=TRUE, theme="proton", themeIcons=FALSE),
         shiny::radioButtons("data_loggers", label=NULL, choices=sort(names(data_loggers))),
-        width=stringr::str_glue("{.app_const_SIDEBAR_WIDTH}px")
+        id="sidebar",
+        width=3
     )
 }
 
 .ui_get_body_ui <- function(data) {
     date_range <- .data_get_date_range(data, "day")
-    shinydashboard::dashboardBody(
+    return(shiny::mainPanel(
         shiny::fluidRow(
             shiny::column(
                 shiny::actionButton("refresh_button", "Show", width="100%",
@@ -60,7 +66,8 @@
                                   brush=shiny::brushOpts(id="plot_brush", resetOnNew=TRUE)),
                 width = 12
             )
-        )
-    )
+        ),
+        width = 9
+    ))
 }
 

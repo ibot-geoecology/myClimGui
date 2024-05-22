@@ -1,4 +1,3 @@
-.app_const_SIDEBAR_WIDTH <- 300
 .app_const_SETTINGS_PLOTLY_KEY <- "plotly"
 .app_const_SETTINGS_MULTI_SELECT_KEY <- "multi_select"
 .app_const_SETTINGS_COLOR_BY_LOGGER_KEY <- "color_by_logger"
