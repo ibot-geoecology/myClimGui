@@ -12,6 +12,8 @@ states <- tribble(
 )
 
 data <- mc_states_insert(data, states)
-states <- dplyr::filter(mc_info_states(data), .data$tag != "source")
+#states <- dplyr::filter(mc_info_states(data), .data$tag != "source")
+#states <- mc_info_states(data)[1, ]
+#print(.plot_states(data, states))
 
-print(.plot_states(data, states))
+mcg_run(data)

@@ -10,7 +10,7 @@
          ggplot2::ylab("Values") +
          ggplot2::xlab("Date")
     for(rectangle in .plot_get_states_rectangles(data_table, states_table)) {
-        p <- p + rectangle
+        p <- p + rectangle + ggplot2::theme(legend.position="bottom")
     }
     return(p)
 }
@@ -37,7 +37,7 @@
             time_diff <- lubridate::hours(3)
         }
         start <- min(group_table$start) - time_diff
-        end <- max(group_table$start) + time_diff
+        end <- max(group_table$end) + time_diff
         return(lubridate::interval(start, end))
     }
     intervals <- purrr::map_vec(dplyr::group_map(groupped_states, group_function), ~ .x)
@@ -81,17 +81,18 @@
     tag_height <- (max_value - min_value) / length(tags)
     tags_table$ymin <- (tags_table$i - 1) * tag_height + min_value
     tags_table$ymax <- tags_table$ymin + tag_height
-    tags_table$color <- RColorBrewer::brewer.pal(8, "Pastel2")[1:length(tags)]
+    tags_table$color <- RColorBrewer::brewer.pal(8, "Set2")[1:length(tags)]
     rectangle_data_table <- dplyr::left_join(states, tags_table, by=dplyr::join_by("tag"))
     rectangle_data_table <- dplyr::select(rectangle_data_table, "tag", "start", "end", "ymin", "ymax")
     group_tags_table <- dplyr::group_by(rectangle_data_table, .data$tag)
     group_function <- function(group_table, .y) {
+        tag <- .y$tag[[1]]
         color <- tags_table$color[tags_table$tag == .y$tag[[1]]]
-        browser()
-        return(ggplot2::geom_rect(data=rectangle_data_table, inherit.aes = FALSE,
-                              ggplot2::aes(xmin=.data$start, xmax=.data$end,
-                                           ymin=.data$ymin, ymax=.data$ymax),
-                              color="transparent", fill=color, alpha=0.3))
+        return(ggplot2::geom_rect(data=group_table, inherit.aes = FALSE,
+                                  ggplot2::aes(xmin=.data$start, xmax=.data$end,
+                                               ymin=.data$ymin, ymax=.data$ymax,
+                                               group=tag),
+                                  color="transparent", fill=color, alpha=0.3, show.legend=TRUE))
     }
     rectangles <- dplyr::group_map(group_tags_table, group_function)
     return(rectangles)
