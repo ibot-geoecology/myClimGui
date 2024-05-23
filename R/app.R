@@ -15,6 +15,7 @@ mcg_run <- function (data, ...) {
 
     server <- function (input, output, session) {
         .server_plot_get_main(data, data_loggers, input, output, session)
+        .server_states_get_main(data, input, output, session)
     }
 
     app <- shiny::shinyApp(ui, server)

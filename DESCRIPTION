@@ -27,7 +27,9 @@ Imports:
     stringr,
     lubridate,
     dplyr,
-    plotly
+    plotly,
+    tibble,
+    DT
 Roxygen: list(markdown = TRUE)
 Suggests:
     rmarkdown,
