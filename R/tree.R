@@ -20,7 +20,7 @@
     return(result)
 }
 
-.tree_filter_data <- function(data, selected) {
+.tree_get_selection_table <- function(data, selected) {
     is_agg <- myClim:::.common_is_agg_format(data)
     
     keep_function <- function(value) {
@@ -45,18 +45,24 @@
         return(list(locality=locality, logger=logger, sensor=sensor))
     }
     
-    table <- purrr::map_dfr(selected, row_function)
+    result <- purrr::map_dfr(selected, row_function)
+    return(result)
+}
+
+.tree_filter_data <- function(data, selection_table) {
+    is_agg <- myClim:::.common_is_agg_format(data)
+    
     result <- data
 
     logger_function <- function(locality_name, logger_index) {
-        logger_table <- dplyr::filter(table, (.data$locality == locality_name) & (.data$logger == logger_index))
+        logger_table <- dplyr::filter(selection_table, (.data$locality == locality_name) & (.data$logger == logger_index))
         logger <- data$localities[[locality_name]]$loggers[[logger_index]]
         logger$sensors <- logger$sensors[logger_table$sensor]
         return(logger)
     }
 
     locality_function <- function(name) {
-        locality_table <- dplyr::filter(table, .data$locality == name)
+        locality_table <- dplyr::filter(selection_table, .data$locality == name)
         locality <- data$localities[[name]]
         if(is_agg) {
             locality$sensors <- locality$sensors[locality_table$sensor]
@@ -66,7 +72,7 @@
         return(locality)
     }
 
-    locality_names <- unique(table$locality)
+    locality_names <- unique(selection_table$locality)
     result$localities <- purrr::map(locality_names, locality_function)
     names(result$localities) <- locality_names
     

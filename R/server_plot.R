@@ -1,4 +1,4 @@
-.server_plot_get_main <- function(data, data_loggers, input, output, session) {
+.server_plot_get_main <- function(input, output, session, shared) {
     previous_sensors <- shiny::reactiveVal()
     zoom_range <- shiny::reactiveVal()
     previous_selected_settings <- shiny::reactiveVal("init")
@@ -7,29 +7,53 @@
     last_filtered_data_table <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(input$settings_checkboxes, {
-        .server_plot_process_settings_change(input, previous_selected_settings, render_plot_number,
-                                             zoom_range)
+        .server_plot_process_settings_change(input, shared, previous_selected_settings, render_plot_number,
+                                                 last_datetime_range, zoom_range, last_filtered_data_table)
     }, ignoreNULL = FALSE)
 
     shiny::observeEvent(input$reset_button, {
-        date_range <- .data_get_date_range(data, "day")
+        date_range <- .data_get_date_range(shared$data, "day")
         shiny::updateDateRangeInput(session, "date_range",
                                     start=date_range[[1]], end=date_range[[2]])
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
 
     shiny::observeEvent(input$sensor_select, {
-        .server_plot_sensor_select_event(data, input, session, previous_sensors)
+        .server_plot_sensor_select_event(shared$data, input, session, previous_sensors)
     })
 
     shiny::observeEvent(input$plot_dblclick, {
         .server_plot_dblclick_event(input, zoom_range)
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
 
-    output$data_tree <- shinyTree::renderTree({.tree_get_list(data)})
+    shiny::observeEvent(input$data_loggers, {
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, TRUE)
+    })
+    
+    shiny::observe({
+        data_tree <- input$data_tree
+        slices <- shinyTree::get_selected(data_tree, format="slices")
+        if(length(slices) == 0) {
+            shared$selection_table <- NULL
+            return()
+        }
+        selection_table <- .tree_get_selection_table(shared$data, slices)
+        if(!is.null(shared$selectopn_table) && dplyr::all_equal(selection_table, shared$selection_table)) {
+            return()
+        }
+        shared$selection_table <- selection_table
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, FALSE)
+    })
+
+    output$data_tree <- shinyTree::renderTree({.tree_get_list(shared$data)})
 
     output$plot_plotly <- plotly::renderPlotly({
-        plot <- .server_plot_render_plot_common(data, data_loggers, session, input, render_plot_number,
-                                                last_datetime_range, zoom_range, last_filtered_data_table)
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, shared$selected_data)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -38,8 +62,7 @@
 
     output$plot_ggplot <- shiny::renderPlot({
         zoom_range_value <- zoom_range()
-        plot <- .server_plot_render_plot_common(data, data_loggers, session, input, render_plot_number,
-                                                last_datetime_range, zoom_range, last_filtered_data_table)
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, shared$selected_data)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -51,8 +74,8 @@
     })
 }
 
-.server_plot_process_settings_change <- function(input, previous_selected_settings, render_plot_number,
-                                                 zoom_range) {
+.server_plot_process_settings_change <- function(input, shared, previous_selected_settings, render_plot_number,
+                                                 last_datetime_range, zoom_range, last_filtered_data_table) {
     is_init <- length(previous_selected_settings()) == 1 && previous_selected_settings() == "init"
     changed_settings <- NULL
     if(!is_init){
@@ -68,6 +91,11 @@
     if(is_init || changed_settings$key == .app_const_SETTINGS_MULTI_SELECT_KEY) {
         .server_plot_multi_select_checkbox_event(input)
     }
+    if(!is_init && changed_settings$key == .app_const_SETTINGS_MULTI_SELECT_KEY) {
+        refresh_plot <- !.server_plot_selected_settings(input, .app_const_SETTINGS_MULTI_SELECT_KEY)
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, refresh_plot)
+    }
     previous_selected_settings(input$settings_checkboxes)
 }
 
@@ -82,7 +110,7 @@
     }
 }
 
-.server_plot_multi_select_checkbox_event <- function(input) {
+.server_plot_multi_select_checkbox_event <- function(input, session) {
     multi_select <- .server_plot_selected_settings(input, .app_const_SETTINGS_MULTI_SELECT_KEY)
     if(multi_select) {
         shinyjs::show(id="sensor_select")
@@ -122,23 +150,31 @@
     }
 }
 
-.server_plot_render_plot_common <- function(data, data_loggers, session, input, render_plot_number,
-                                            last_datetime_range, zoom_range, last_filtered_data_table)
+.server_plot_change_selected_data <- function(input, shared, last_datetime_range, zoom_range, last_filtered_data_table,
+                                              render_plot_number, refresh_plot) {
+    shiny::isolate(.server_plot_set_selected_data(input, shared))
+    if(is.null(shared$selected_data)) {
+        return()
+    }
+    if(.server_plot_reset_zoom_range_if_need(shared$selected_data, last_filtered_data_table, zoom_range)) {
+        return()
+    }
+    shared$selected_data <- .server_plot_crop_plot_data(shared$selected_data, input, zoom_range)
+    last_datetime_range(.data_get_date_range(shared$selected_data))
+    if(refresh_plot) {
+        render_plot_number(render_plot_number()+1)
+    }
+}
+
+.server_plot_render_plot_common <- function(session, input, render_plot_number, selected_data)
 {
-    input$data_loggers
     input$refresh_button
     input$facet_select
     render_plot_number()
-    shiny::isolate(filtered_data <- .server_plot_get_plot_data(data, data_loggers, input))
-    if(is.null(filtered_data)) {
+    if(is.null(selected_data)) {
         return(NULL)
     }
-    if(.server_plot_reset_zoom_range_if_need(filtered_data, last_filtered_data_table, zoom_range)) {
-        return(NULL)
-    }
-    filtered_data <- .server_plot_crop_plot_data(filtered_data, input, zoom_range)
-    last_datetime_range(.data_get_date_range(filtered_data))
-    shiny::isolate(plot <- .server_plot_get_plot(filtered_data, input))
+    shiny::isolate(plot <- .server_plot_get_plot(selected_data, input))
     return(plot)
 }
 
@@ -153,29 +189,27 @@
     return(filtered_data)
 }
 
-.server_plot_get_plot_data <- function(data, data_loggers, input)
+.server_plot_set_selected_data <- function(input, shared)
 {
     data_tree <- input$data_tree
     input_data_loggers <- input$data_loggers
     multi_select <- .server_plot_selected_settings(input, .app_const_SETTINGS_MULTI_SELECT_KEY)
-    if((multi_select && is.null(data_tree)) || (!multi_select && is.null(data_loggers))) {
+    if((multi_select && is.null(data_tree)) || (!multi_select && is.null(shared$data_loggers))) {
         return(NULL)
     }
     if(multi_select) {
-        slices <- shinyTree::get_selected(data_tree, format="slices")
-        if(length(slices) == 0) {
+        if(is.null(shared$selection_table)) {
             return(NULL)
         }
-        filtered_data <- .tree_filter_data(data, slices)
+        shared$selected_data <- .tree_filter_data(shared$data, shared$selection_table)
     } else {
-        selected_loggers <- data_loggers[[input_data_loggers]]
+        selected_loggers <- shared$data_loggers[[input_data_loggers]]
         logger_type <- NULL
         if(length(selected_loggers) == 2) {
             logger_type <- selected_loggers[[2]]
         }
-        filtered_data <- myClim::mc_filter(data, localities=selected_loggers[[1]], logger_types=logger_type)
+        shared$selected_data <- myClim::mc_filter(shared$data, localities=selected_loggers[[1]], logger_types=logger_type)
     }
-    return(filtered_data)
 }
 
 .server_plot_get_plot <- function(data, input)

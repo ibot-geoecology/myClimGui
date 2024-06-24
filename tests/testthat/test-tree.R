@@ -8,7 +8,8 @@ test_that(".tree_get_list", {
 
 test_that(".tree_filter_data", {
     selected_raw <- readRDS("../data/tree/selected_raw.rds")
-    filtered_raw_data <- .tree_filter_data(myClim::mc_data_example_raw, selected_raw)
+    selection_table <- .tree_get_selection_table(myClim::mc_data_example_raw, selected_raw)
+    filtered_raw_data <- .tree_filter_data(myClim::mc_data_example_raw, selection_table)
     expect_equal(length(filtered_raw_data$localities), 2)
     expect_equal(length(filtered_raw_data$localities$A1E05$loggers), 2)
     expect_equal(length(filtered_raw_data$localities$A1E05$loggers[[1]]$sensors), 1)
@@ -16,7 +17,8 @@ test_that(".tree_filter_data", {
     expect_equal(length(filtered_raw_data$localities$A2E32$loggers), 1)
     expect_equal(length(filtered_raw_data$localities$A2E32$loggers[[1]]$sensors), 4)
     selected_agg <- readRDS("../data/tree/selected_agg.rds")
-    filtered_agg_data <- .tree_filter_data(myClim::mc_data_example_agg, selected_agg)
+    selection_table_agg <- .tree_get_selection_table(myClim::mc_data_example_agg, selected_agg)
+    filtered_agg_data <- .tree_filter_data(myClim::mc_data_example_agg, selection_table_agg)
     expect_equal(length(filtered_agg_data$localities), 2)
     expect_equal(length(filtered_agg_data$localities$A1E05$sensors), 3)
     expect_equal(length(filtered_agg_data$localities$A2E32$sensors), 4)
