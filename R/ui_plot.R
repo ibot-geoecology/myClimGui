@@ -1,5 +1,5 @@
 .ui_plot_tab <- function(data, data_loggers) {
-    shiny::tabPanel("Plot",
+    shiny::tabPanel(.ui_const_PLOT_TITLE,
                     shiny::tags$style(
                         shiny::HTML("#sidebar {height: calc(100vh - 95px); overflow-y: auto; }")),
                     shiny::sidebarLayout(

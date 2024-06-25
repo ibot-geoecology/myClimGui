@@ -1,5 +1,5 @@
 .ui_states_tab <- function(data) {
-    shiny::tabPanel("States",
+    shiny::tabPanel(.ui_const_STATES_TITLE,
         shiny::fluidRow(
             shiny::column(
                 DT::dataTableOutput("states_table"),

@@ -34,7 +34,7 @@
                                           zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
     
-    shiny::observe({
+    shiny::observeEvent(input$data_tree, {
         data_tree <- input$data_tree
         slices <- shinyTree::get_selected(data_tree, format="slices")
         if(length(slices) == 0) {
