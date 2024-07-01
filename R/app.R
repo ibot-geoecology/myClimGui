@@ -14,8 +14,24 @@ mcg_run <- function (data, ...) {
 
     server <- function (input, output, session) {
         shared <- .app_get_initialized_shared(data, data_loggers)
+        states_table_value <- shiny::reactiveVal()
+        data_table_value <- shiny::reactiveVal()
+        
+        shiny::observeEvent(input$navbar_page, {
+            if(is.null(shared$selected_data)) {
+                return()
+            }
+            tab_value <- shiny::req(input$navbar_page)
+            if(tab_value == .ui_const_STATES_TITLE) {
+                states_table_value(.server_states_get_table(shared))
+            } else if(tab_value == .ui_const_DATA_TITLE) {
+                data_table_value(.server_data_get_table(shared))
+            }
+        })
+    
         .server_plot_get_main(input, output, session, shared)
-        .server_states_get_main(input, output, session, shared)
+        .server_states_get_main(input, output, session, shared, states_table_value)
+        .server_data_get_main(input, output, session, shared, data_table_value)
     }
 
     app <- shiny::shinyApp(ui, server)
