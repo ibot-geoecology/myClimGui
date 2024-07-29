@@ -1,6 +1,8 @@
 .plot_const_NEIGHBORHOOD_LENGTH <- 13
 
 .plot_states <- function(data, states_table) {
+    states_table$start <- lubridate::ymd_hms(states_table$start)
+    states_table$end <- lubridate::ymd_hms(states_table$end)
     groupped_table <- dplyr::group_by(states_table, .data$locality_id, .data$logger_index, .data$sensor_name)
     range <- .plot_states_get_range(data, groupped_table)
     data_table <- .plot_states_get_data(data, groupped_table, range)
