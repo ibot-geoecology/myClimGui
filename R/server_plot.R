@@ -16,6 +16,11 @@
         shiny::updateDateRangeInput(session, "date_range",
                                     start=date_range[[1]], end=date_range[[2]])
         .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, FALSE)
+    })
+
+    shiny::observeEvent(input$date_range, {
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
                                           zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
 

@@ -1,5 +1,6 @@
 .ui_plot_tab <- function(data, data_loggers) {
     shiny::tabPanel(.ui_const_PLOT_TITLE,
+                    icon = shiny::icon("chart-line"),
                     shiny::tags$style(
                         shiny::HTML("#sidebar {height: calc(100vh - 95px); overflow-y: auto; }")),
                     shiny::sidebarLayout(
@@ -40,9 +41,7 @@
                 shiny::selectInput("facet_select", NULL, c("NULL", "locality", "physical"), selected="physical",
                                    width="100%"),
                 width = 2),
-            shiny::tagAppendAttributes(shiny::column(
-                shiny::textOutput("datetime_range"),
-                width = 4), class="text-center", style="font-weight: bold; "),
+            shiny::column(width = 4),
             shiny::column(
                 shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]], width="100%"),
                 width = 3

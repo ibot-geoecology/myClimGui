@@ -16,4 +16,4 @@ data <- mc_states_insert(data, states)
 #states <- mc_info_states(data)[1, ]
 #print(.plot_states(data, states))
 
-mcg_run(data)
+new_data <- mcg_run(data)

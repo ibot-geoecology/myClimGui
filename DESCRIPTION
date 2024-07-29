@@ -23,6 +23,7 @@ Imports:
     shiny,
     shinyjs,
     shinyTree,
+    shinythemes,
     purrr,
     stringr,
     lubridate,
