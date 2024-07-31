@@ -42,3 +42,14 @@
     result <- myClim::mc_info_logger(data)
     return(dplyr::select(result, "locality_id", "index", "serial_number", "logger_type"))
 }
+
+.data_edit_states <- function(data, edit_table, selected_states_table) {
+    browser()
+    row_index <- edit_table$row[[1]]
+    column_index <- edit_table$col[[1]]
+    changed_row <- selected_states_table[row_index, ]
+    states_table <- dplyr::setdiff(myClim::mc_info_states(data), changed_row)
+    changed_row[column_index] <- changed_row$value[1, 1]
+    states_table <- dplyr::union_all(states_table, changed_row)
+    return(myClim::mc_states_update(data, states_table))
+}

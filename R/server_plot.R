@@ -58,7 +58,11 @@
     output$data_tree <- shinyTree::renderTree({.tree_get_list(shared$data)})
 
     output$plot_plotly <- plotly::renderPlotly({
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, shared$selected_data)
+        crop_data <- NULL
+        if(!is.null(shared$filter_data)) {
+            crop_data <- myClim::mc_prep_crop(shared$filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
+        }
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -67,7 +71,11 @@
 
     output$plot_ggplot <- shiny::renderPlot({
         zoom_range_value <- zoom_range()
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, shared$selected_data)
+        crop_data <- NULL
+        if(!is.null(shared$filter_data)) {
+            crop_data <- myClim::mc_prep_crop(shared$filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
+        }
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -157,15 +165,18 @@
 
 .server_plot_change_selected_data <- function(input, shared, last_datetime_range, zoom_range, last_filtered_data_table,
                                               render_plot_number, refresh_plot) {
+    shared$filter_data <- NULL
+    shared$crop_range <- NULL
     shiny::isolate(.server_plot_set_selected_data(input, shared))
-    if(is.null(shared$selected_data)) {
+    if(is.null(shared$filter_data)) {
         return()
     }
-    if(.server_plot_reset_zoom_range_if_need(shared$selected_data, last_filtered_data_table, zoom_range)) {
+    if(.server_plot_reset_zoom_range_if_need(shared$filter_data, last_filtered_data_table, zoom_range)) {
         return()
     }
-    shared$selected_data <- .server_plot_crop_plot_data(shared$selected_data, input, zoom_range)
-    last_datetime_range(.data_get_date_range(shared$selected_data))
+    
+    shared$crop_range <- .server_plot_get_crop_range(input, shared, zoom_range)
+    last_datetime_range(shared$crop_range)
     if(refresh_plot) {
         render_plot_number(render_plot_number()+1)
     }
@@ -183,15 +194,17 @@
     return(plot)
 }
 
-.server_plot_crop_plot_data <- function(filtered_data, input, zoom_range)
+.server_plot_get_crop_range <- function(input, shared, zoom_range)
 {
-    date_range <- input$date_range
-    date_range[[2]] <- date_range[[2]] + lubridate::days(1)
-    if(!is.null(zoom_range())) {
-        date_range <- zoom_range()
+    crop_range <- input$date_range
+    if(crop_range[[2]] > shared$data_range[[2]]) {
+        crop_range[[2]] <- shared$data_range[[2]]
     }
-    filtered_data <- myClim::mc_prep_crop(filtered_data, start=date_range[[1]], end=date_range[[2]])
-    return(filtered_data)
+    if(!is.null(zoom_range())) {
+        crop_range <- zoom_range()
+    }
+    crop_data <- myClim::mc_prep_crop(shared$filter_data, crop_range[[1]], crop_range[[2]])
+    return(.data_get_date_range(crop_data))
 }
 
 .server_plot_set_selected_data <- function(input, shared)
@@ -200,20 +213,20 @@
     input_data_loggers <- input$data_loggers
     multi_select <- .server_plot_selected_settings(input, .app_const_SETTINGS_MULTI_SELECT_KEY)
     if((multi_select && is.null(data_tree)) || (!multi_select && is.null(shared$data_loggers))) {
-        return(NULL)
+        return()
     }
     if(multi_select) {
         if(is.null(shared$selection_table)) {
-            return(NULL)
+            return()
         }
-        shared$selected_data <- .tree_filter_data(shared$data, shared$selection_table)
+        shared$filter_data <- .tree_filter_data(shared$data, shared$selection_table)
     } else {
         selected_loggers <- shared$data_loggers[[input_data_loggers]]
         logger_type <- NULL
         if(length(selected_loggers) == 2) {
             logger_type <- selected_loggers[[2]]
         }
-        shared$selected_data <- myClim::mc_filter(shared$data, localities=selected_loggers[[1]], logger_types=logger_type)
+        shared$filter_data <- myClim::mc_filter(shared$data, localities=selected_loggers[[1]], logger_types=logger_type)
     }
 }
 

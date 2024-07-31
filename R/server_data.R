@@ -10,7 +10,8 @@
 }
 
 .server_data_get_table <- function(shared){
-    result <- myClim::mc_reshape_wide(shared$selected_data)
+    crop_data <- myClim::mc_prep_crop(shared$filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
+    result <- myClim::mc_reshape_wide(crop_data)
     result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
     return(result)
 }

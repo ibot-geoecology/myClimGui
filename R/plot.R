@@ -1,11 +1,10 @@
 .plot_const_NEIGHBORHOOD_LENGTH <- 13
 
-.plot_states <- function(data, states_table) {
-    states_table$start <- lubridate::ymd_hms(states_table$start)
-    states_table$end <- lubridate::ymd_hms(states_table$end)
+.plot_states <- function(shared, states_table) {
+    crop_data <- myClim::mc_prep_crop(shared$filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
     groupped_table <- dplyr::group_by(states_table, .data$locality_id, .data$logger_index, .data$sensor_name)
-    range <- .plot_states_get_range(data, groupped_table)
-    data_table <- .plot_states_get_data(data, groupped_table, range)
+    range <- .plot_states_get_range(crop_data, groupped_table)
+    data_table <- .plot_states_get_data(crop_data, groupped_table, range)
     p <- ggplot2::ggplot(data=data_table, ggplot2::aes(x=.data$datetime, y=.data$value, group=.data$name)) +
          ggplot2::geom_line(ggplot2::aes(color=.data$name)) +
          ggplot2::theme(legend.position="bottom") +

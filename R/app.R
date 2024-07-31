@@ -18,7 +18,7 @@ mcg_run <- function (data, ...) {
         data_table_value <- shiny::reactiveVal()
         
         shiny::observeEvent(input$navbar_page, {
-            if(is.null(shared$selected_data)) {
+            if(is.null(shared$filter_data)) {
                 return()
             }
             tab_value <- shiny::req(input$navbar_page)
@@ -29,7 +29,7 @@ mcg_run <- function (data, ...) {
             }
         })
     
-        shiny::observeEvent(input$exit_button, {
+        shiny::observeEvent(input$return_button, {
             shiny::stopApp(shared$data)
         })
     
@@ -46,7 +46,9 @@ mcg_run <- function (data, ...) {
     result <- new.env()
     result$data <- data
     result$data_loggers <- data_loggers
+    result$data_range <- .data_get_date_range(data)
     result$selection_table <- NULL
-    result$selected_data <- NULL
+    result$filter_data <- NULL
+    result$crop_range <- NULL
     return(result)
 }
