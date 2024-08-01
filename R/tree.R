@@ -35,47 +35,17 @@
     selected <- purrr::keep(selected, keep_function)
     
     row_function <- function (item) {
-        locality <- names(item)[[1]]
+        locality_id <- names(item)[[1]]
         second_name <- names(item[[1]])[[1]]
         if(is_agg) {
-            return(list(locality=locality, sensor=second_name))
+            return(list(locality_id=locality_id, sensor_name=second_name))
         }
-        logger <- as.double(stringr::str_extract(second_name, "\\[(\\d+)\\].*", group=1))
-        sensor <- names(item[[1]][[1]])[[1]]
-        return(list(locality=locality, logger=logger, sensor=sensor))
+        logger_index <- as.double(stringr::str_extract(second_name, "\\[(\\d+)\\].*", group=1))
+        sensor_name <- names(item[[1]][[1]])[[1]]
+        return(list(locality_id=locality_id, logger_index=logger_index, sensor_name=sensor_name))
     }
     
     result <- purrr::map_dfr(selected, row_function)
-    return(result)
-}
-
-.tree_filter_data <- function(data, selection_table) {
-    is_agg <- myClim:::.common_is_agg_format(data)
-    
-    result <- data
-
-    logger_function <- function(locality_name, logger_index) {
-        logger_table <- dplyr::filter(selection_table, (.data$locality == locality_name) & (.data$logger == logger_index))
-        logger <- data$localities[[locality_name]]$loggers[[logger_index]]
-        logger$sensors <- logger$sensors[logger_table$sensor]
-        return(logger)
-    }
-
-    locality_function <- function(name) {
-        locality_table <- dplyr::filter(selection_table, .data$locality == name)
-        locality <- data$localities[[name]]
-        if(is_agg) {
-            locality$sensors <- locality$sensors[locality_table$sensor]
-            return(locality)
-        }
-        locality$loggers <- purrr::map2(name, unique(locality_table$logger), logger_function)
-        return(locality)
-    }
-
-    locality_names <- unique(selection_table$locality)
-    result$localities <- purrr::map(locality_names, locality_function)
-    names(result$localities) <- locality_names
-    
     return(result)
 }
 

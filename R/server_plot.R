@@ -219,7 +219,7 @@
         if(is.null(shared$selection_table)) {
             return()
         }
-        shared$filter_data <- .tree_filter_data(shared$data, shared$selection_table)
+        shared$filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
     } else {
         selected_loggers <- shared$data_loggers[[input_data_loggers]]
         logger_type <- NULL
@@ -227,6 +227,7 @@
             logger_type <- selected_loggers[[2]]
         }
         shared$filter_data <- myClim::mc_filter(shared$data, localities=selected_loggers[[1]], logger_types=logger_type)
+        shared$selection_table <- .data_get_selection_table(shared$filter_data)
     }
 }
 
