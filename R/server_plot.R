@@ -197,6 +197,7 @@
 .server_plot_get_crop_range <- function(input, shared, zoom_range)
 {
     crop_range <- input$date_range
+    crop_range[[2]] <- crop_range[[2]] + lubridate::days(1)
     if(crop_range[[2]] > shared$data_range[[2]]) {
         crop_range[[2]] <- shared$data_range[[2]]
     }

@@ -9,6 +9,11 @@
 #' @param data myClim data
 #' @export
 mcg_run <- function (data, ...) {
+    app <- .app_get_shiny_object(data)
+    shiny::runApp(app, ...)
+}
+
+.app_get_shiny_object <- function(data) {
     data_loggers <- .data_get_locality_logger_type(data)
     ui <- .ui_get_main(data, data_loggers)
 
@@ -38,8 +43,7 @@ mcg_run <- function (data, ...) {
         .server_data_get_main(input, output, session, shared, data_table_value)
     }
 
-    app <- shiny::shinyApp(ui, server)
-    shiny::runApp(app, ...)
+    return(shiny::shinyApp(ui, server))
 }
 
 .app_get_initialized_shared <- function(data, data_loggers) {
