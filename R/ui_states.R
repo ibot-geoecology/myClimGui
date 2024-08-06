@@ -3,6 +3,18 @@
                     icon = shiny::icon("tags"),
         shiny::fluidRow(
             shiny::column(
+                shiny::actionButton("new_state_button", .texts_new, width="100%"),
+                width = 2,
+                style="padding: 5px; "
+            ),
+            shiny::column(
+                shiny::actionButton("range_button", .texts_edit_range, width="100%"),
+                width = 2,
+                style="padding: 5px; "
+            )
+        ),
+        shiny::fluidRow(
+            shiny::column(
                 DT::dataTableOutput("states_table"),
                 width = 12
             )
