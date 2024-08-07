@@ -43,20 +43,16 @@
     return(dplyr::select(result, "locality_id", "index", "serial_number", "logger_type"))
 }
 
-.data_edit_states <- function(data, edit_table, selected_states_table) {
-    row_index <- edit_table$row[[1]]
-    column_index <- edit_table$col[[1]]
-    changed_row <- selected_states_table[row_index, ]
+.data_edit_states <- function(data, changed_table, new_values) {
+    changed_table$edit <- TRUE
     states_table <- myClim::mc_info_states(data)
-    condition <- .data_compareNA(states_table$locality_id, changed_row$locality_id) &
-                 .data_compareNA(states_table$logger_index, changed_row$logger_index) &
-                 .data_compareNA(states_table$sensor_name, changed_row$sensor_name) &
-                 .data_compareNA(states_table$tag, changed_row$tag) &
-                 .data_compareNA(states_table$start, changed_row$start) &
-                 .data_compareNA(states_table$end, changed_row$end) &
-                 .data_compareNA(states_table$value, changed_row$value)
-    states_table[condition, column_index] <- edit_table$value
-    return(myClim::mc_states_update(data, states_table))
+    columns <- colnames(states_table)
+    states_table <- dplyr::left_join(states_table, changed_table, by=columns)
+    states_table$edit[is.na(states_table$edit)] <- FALSE
+    for(name in names(new_values)) {
+        states_table[states_table$edit, name] <- new_values[[name]]
+    }
+    return(myClim::mc_states_update(data, dplyr::select(states_table, columns)))
 }
 
 .data_filter_by_selection_table <- function(data, selection_table) {

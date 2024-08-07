@@ -1,13 +1,14 @@
-.server_states_const_COUNT_EDIT_RANGE_ROWS <- 500
+.server_states_const_RANGE_PAGE_LENGTH <- 25
+.server_states_const_RANGE_LENGTH_MENU <- c(10, 25, 50, 100, 1000)
 
 .server_states_get_main <- function(input, output, session, shared, states_table_value) {
     edit_range_table_value <- shiny::reactiveVal()
     selected_range <- shiny::reactiveVal()
+    form_mode <- shiny::reactiveVal()
         
     shiny::observeEvent(input$states_table_cell_edit, {
-        shared$data <- .data_edit_states(shared$data, input$states_table_cell_edit, states_table_value())
-        shared$filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
-        .server_states_reload_table(shared, states_table_value)
+        shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value())
+        .server_states_reload_data_after_edit(shared, states_table_value)
     })
     
     shiny::observeEvent(input$range_button, {
@@ -16,28 +17,35 @@
             shiny::showNotification(.texts_states_not_selected_states_notification)
             return(NULL)
         }
+        form_mode("edit")
         edit_range_table_value(.server_states_get_table_for_edit_range(shared, states_table_value(), selected_rows))
-        shiny::showModal(shiny::modalDialog(title=.texts_edit_range,
-                                            size="l",
-                                            footer= shiny::tagList(
-                                                shiny::modalButton(.texts_cancel),
-                                                shiny::actionButton("select_range_button", .texts_select)
-                                            ),
-                                            shiny::textInput("new_tag", .texts_tag),
-                                            shiny::textInput("new_value", .texts_value),
-                                            shiny::tagAppendAttributes(
-                                                shiny::textOutput("selected_range_text"),
-                                                style="font-weight: bold; "),
-                                            shiny::br(),
-                                            DT::dataTableOutput("edit_range_table")))
+        .server_states_open_form_dialog(FALSE)
     })
    
-    shiny::observeEvent(input$select_range_button, {
+    shiny::observeEvent(input$new_state_button, {
+        form_mode("new")
+        edit_range_table_value(.server_states_get_table_for_states_form(shared$filter_data, shared$crop_range))
+        .server_states_open_form_dialog(TRUE)
+    })
+   
+    shiny::observeEvent(input$confirm_state_form_button, {
         selected_datetimes <- .server_states_get_selected_datetimes(input, edit_range_table_value)
         if(length(selected_datetimes) == 0 || length(selected_datetimes) > 2) {
             shiny::showNotification(.texts_states_not_correct_range_notification)
             return()
         }
+        if(form_mode() == "new")
+        {
+            if(input$new_tag == "") {
+                shiny::showNotification(.texts_states_empty_tag_notification)
+                return()
+            }
+        } else if(form_mode() == "edit") {
+            changed_table <- states_table_value()[input$states_table_rows_selected, ]
+            shared$data <- .server_states_edit_range(shared$data, changed_table, selected_datetimes)
+            .server_states_reload_data_after_edit(shared, states_table_value)
+        }
+        
         shiny::removeModal()
     })
     
@@ -66,7 +74,9 @@
             return(NULL)
         }
         result <-DT::datatable(edit_range_table_value(),
-                               options = list(pageLength = .server_states_const_COUNT_EDIT_RANGE_ROWS))
+                               options = list(pageLength = .server_states_const_RANGE_PAGE_LENGTH,
+                                              lengthMenu = .server_states_const_RANGE_LENGTH_MENU,
+                                              scrollX = TRUE))
         return(result)
     })
     
@@ -100,6 +110,11 @@
     return(states_table)
 }
 
+.server_states_reload_data_after_edit <- function(shared, states_table_value) {
+    shared$filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
+    .server_states_reload_table(shared, states_table_value)
+}
+
 .server_states_reload_table <- function(shared, states_table_value) {
     states_table_value(myClim::mc_info_states(shared$filter_data))
 }
@@ -109,7 +124,12 @@
     selection_table <- dplyr::select(states_table, "locality_id", "logger_index", "sensor_name")
     selection_table <- dplyr::distinct(selection_table)
     data <- .data_filter_by_selection_table(shared$filter_data, selection_table)
-    crop_data <- myClim::mc_prep_crop(data, shared$crop_range[[1]], shared$crop_range[[2]])
+    result <- .server_states_get_table_for_states_form(data, shared$crop_range)
+    return(result)
+}
+
+.server_states_get_table_for_states_form <- function(data, crop_range) {
+    crop_data <- myClim::mc_prep_crop(data, crop_range[[1]], crop_range[[2]])
     result <- myClim::mc_reshape_wide(crop_data)
     result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
     return(result)
@@ -121,3 +141,51 @@
     result <- dplyr::arrange(result, "datetime")
     return(result$datetime)
 }
+
+.server_states_open_form_dialog <- function(is_new_state) {
+    new_tag_input <- NULL
+    new_value_input <- NULL
+    button_text <- .texts_edit
+    if(is_new_state) {
+        new_tag_input <- shiny::textInput("new_tag", .texts_tag)
+        new_value_input <- shiny::textInput("new_value", .texts_value)
+        button_text <- .texts_new
+    }
+    shiny::showModal(shiny::modalDialog(title=.texts_edit_range,
+                                        size="l",
+                                        footer= shiny::tagList(
+                                            shiny::modalButton(.texts_cancel),
+                                            shiny::actionButton("confirm_state_form_button", button_text)
+                                        ),
+                                        new_tag_input,
+                                        new_value_input,
+                                        shiny::tagAppendAttributes(
+                                            shiny::textOutput("selected_range_text"),
+                                            style="font-weight: bold; "),
+                                        shiny::br(),
+                                        DT::dataTableOutput("edit_range_table")))
+}
+
+.server_states_edit_text_cells <- function(data, edit_table, selected_states_table) {
+    row_index <- edit_table$row[[1]]
+    changed_row <- selected_states_table[row_index, ]
+    column_index <- edit_table$col[[1]]
+    column_name <- colnames(changed_row)[[column_index]]
+    new_values <- list()
+    new_values[[column_name]] <- edit_table$value
+    result <- .data_edit_states(data, changed_row, new_values)
+    return(result)
+}
+
+.server_states_edit_range <- function(data, changed_table, selected_datetimes) {
+    new_values <- list()
+    new_values[["start"]] <- lubridate::ymd_hms(selected_datetimes[[1]])
+    if(length(selected_datetimes) == 1) {
+        new_values[["end"]] <- new_values[["start"]]
+    } else {
+        new_values[["end"]] <- lubridate::ymd_hms(selected_datetimes[[2]])
+    }
+    result <- .data_edit_states(data, changed_table, new_values)
+    return(result)
+}
+

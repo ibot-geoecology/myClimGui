@@ -82,7 +82,7 @@
     tags_table$ymin <- (tags_table$i - 1) * tag_height + min_value
     tags_table$ymax <- tags_table$ymin + tag_height
     tags_table$color <- RColorBrewer::brewer.pal(8, "Set2")[1:length(tags)]
-    rectangle_data_table <- dplyr::left_join(states, tags_table, by=dplyr::join_by("tag"))
+    rectangle_data_table <- dplyr::left_join(states, tags_table, by="tag")
     rectangle_data_table <- dplyr::select(rectangle_data_table, "tag", "start", "end", "ymin", "ymax")
     group_tags_table <- dplyr::group_by(rectangle_data_table, .data$tag)
     group_function <- function(group_table, .y) {
