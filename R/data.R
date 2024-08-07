@@ -120,3 +120,35 @@
     same[is.na(same)] <- FALSE
     return(same)
 }
+
+.data_selection_table_add_range <- function(data, selection_table) {
+    is_agg <- myClim:::.common_is_agg_format(data)
+    
+    agg_locality_function <- function(locality_id) {
+        int <- lubridate::interval(start=min(data$localities[[locality_id]]$datetime),
+                                   end=max(data$localities[[locality_id]]$datetime))
+        result <- list(locality_id=locality_id,
+                       int=int)
+    }
+
+    logger_function <- function(locality_id, logger_index) {
+        int <- lubridate::interval(start=min(data$localities[[locality_id]]$loggers[[logger_index]]$datetime),
+                                   end=max(data$localities[[locality_id]]$loggers[[logger_index]]$datetime))
+        result <- list(locality_id=locality_id,
+                       logger_index=logger_index,
+                       int=int)
+    }
+    
+    if(is_agg) {
+        localities <- unique(selection_table$locality_id)
+        ranges_table <- purrr::map_dfr(localities, agg_locality_function)
+        by <- "locality_id"
+    } else {
+        logger_table <- dplyr::distinct(dplyr::select(selection_table, "locality_id", "logger_index"))
+        ranges_table <- purrr::map2_dfr(logger_table$locality_id, logger_table$logger_index,logger_function)
+        by <- c("locality_id", "logger_index")
+    }
+
+    result <- dplyr::left_join(selection_table, ranges_table, by=by)
+    return(result)
+}

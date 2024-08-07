@@ -40,12 +40,13 @@
                 shiny::showNotification(.texts_states_empty_tag_notification)
                 return()
             }
+            shared$data <- .server_states_add_states(shared, selected_datetimes, input$new_tag, input$new_value)
         } else if(form_mode() == "edit") {
             changed_table <- states_table_value()[input$states_table_rows_selected, ]
             shared$data <- .server_states_edit_range(shared$data, changed_table, selected_datetimes)
-            .server_states_reload_data_after_edit(shared, states_table_value)
         }
         
+        .server_states_reload_data_after_edit(shared, states_table_value)
         shiny::removeModal()
     })
     
@@ -189,3 +190,26 @@
     return(result)
 }
 
+
+.server_states_add_states <- function(shared, selected_datetimes, tag, value) {
+    browser()
+    ranges_table <- .data_selection_table_add_range(shared$filter_data, shared$selection_table)
+    start <- lubridate::ymd_hms(selected_datetimes[[1]])
+    end <- start
+    if(length(selected_datetimes) > 1) {
+        end <- lubridate::ymd_hms(selected_datetimes[[2]])
+    }
+    selected_interval <- lubridate::interval(start=start, end=end)
+    
+    selection_table <- shared$selection_table[lubridate::int_overlaps(ranges_table$int, selected_interval), ]
+    selection_table$tag <- tag
+    selection_table$start <- start
+    selection_table$end <- end
+    
+    if(value != "") {
+        selection_table$value <- value
+    }
+    
+    result <- myClim::mc_states_insert(shared$data, selection_table)
+    return(result)
+}
