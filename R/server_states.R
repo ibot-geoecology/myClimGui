@@ -192,7 +192,6 @@
 
 
 .server_states_add_states <- function(shared, selected_datetimes, tag, value) {
-    browser()
     ranges_table <- .data_selection_table_add_range(shared$filter_data, shared$selection_table)
     start <- lubridate::ymd_hms(selected_datetimes[[1]])
     end <- start
