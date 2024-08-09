@@ -129,9 +129,21 @@ This is the section where you can browse your time-series row by row, column by 
   <img src="data.png" width="700"/>
 </div> 
 
+# Run myClimGui in background
+Normally, when you run a Shiny app from RStudio, the console "freezes" as it executes commands from Shiny. 
+To avoid this behavior, you can use the `mcg_run_bg` function, which is a wrapper for the parallel console from the `callr` package. This allows you to open your web browser, use *myClimGui* there, and still be able to work in RStudio as usual, without any freezing. To retrieve your modified object, you need to query the environment by calling `$get_result()`.
+
+```{r,eval=FALSE,include=TRUE,comment='',purl=TRUE}
+# launch  process in web browser
+proc <- myClimGui::mcg_run_bg(myClim::mc_data_example_agg)
+
+# retrieve the result after click Return button
+data <- proc$get_result()
+```
+
 ## WARNINGS
 
-* Once you call `mcg_run` and Shiny starts, the RStudio console is "frozen," handling commands from Shiny. You are not able to work in the console simultaneously with running Shiny.
+* Once you call `mcg_run` and Shiny starts, the RStudio console is "frozen," handling commands from Shiny. You are not able to work in the console simultaneously with running Shiny. If you wish to work in consle and the same time run Shiny app use function `mcg_run_bg`.
 * Be patient; it is Shiny, and it is relatively slow, performing all your commands one by one. This means if you start nervously clicking the buttons, thinking it is not responding, you will eventually see Shiny performing all your actions one by one.
 * When using Plotly mode, combining two physical elements (e.g., temperature and soil moisture) in a single plotting window, be mindful of the scaling. Plotly will show you scaled values instead of your real data. The solution is to plot by physical element, i.e., plot a single physical element in a single plotting window, avoiding the combination of two variables with different value ranges.
 
