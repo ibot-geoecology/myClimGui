@@ -55,6 +55,16 @@
     return(myClim::mc_states_update(data, dplyr::select(states_table, columns)))
 }
 
+.data_delete_states <- function(data, delete_table) {
+    delete_table$delete <- TRUE
+    states_table <- myClim::mc_info_states(data)
+    columns <- colnames(states_table)
+    states_table <- dplyr::left_join(states_table, delete_table, by=columns)
+    states_table$delete[is.na(states_table$delete)] <- FALSE
+    states_table <- dplyr::filter(states_table, !.data$delete)
+    return(myClim::mc_states_update(data, dplyr::select(states_table, columns)))
+}
+
 .data_filter_by_selection_table <- function(data, selection_table) {
     is_agg <- myClim:::.common_is_agg_format(data)
     
@@ -152,3 +162,4 @@
     result <- dplyr::left_join(selection_table, ranges_table, by=by)
     return(result)
 }
+

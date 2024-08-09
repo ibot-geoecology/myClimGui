@@ -28,6 +28,29 @@
         .server_states_open_form_dialog(TRUE)
     })
    
+    shiny::observeEvent(input$delete_states_button, {
+        selected_rows <- input$states_table_rows_selected
+        count_states <- length(selected_rows)
+        if(count_states == 0) {
+            shiny::showNotification(.texts_states_not_selected_states_notification)
+            return(NULL)
+        }
+        question <- stringr::str_glue(.texts_states_delete_states_question)
+        shiny::showModal(shiny::modalDialog(title=question,
+                                        footer= shiny::tagList(
+                                            shiny::modalButton(.texts_cancel),
+                                            shiny::actionButton("confirm_delete_states_button", .texts_delete)
+                                        )))
+    })
+   
+    shiny::observeEvent(input$confirm_delete_states_button, {
+        selected_rows <- input$states_table_rows_selected
+        delete_table <- states_table_value()[selected_rows, ]
+        shared$data <- .data_delete_states(shared$data, delete_table)
+        .server_states_reload_data_after_edit(shared, states_table_value)
+        shiny::removeModal()
+    })
+   
     shiny::observeEvent(input$confirm_state_form_button, {
         selected_datetimes <- .server_states_get_selected_datetimes(input, edit_range_table_value)
         if(length(selected_datetimes) == 0 || length(selected_datetimes) > 2) {
