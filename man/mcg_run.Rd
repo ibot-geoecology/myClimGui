@@ -7,8 +7,28 @@
 mcg_run(data, ...)
 }
 \arguments{
-\item{data}{myClim data}
+\item{data}{myClim object}
 }
 \description{
-Main function, which start shiny application.
+The main function that starts the Shiny application.
+}
+\details{
+The Shiny application opens in the RStudio viewer and can be opened in a web browser from there.
+The Shiny app provides an interactive tool for browsing \emph{myClim} objects,
+inspecting, and comparing time-series data.
+You can view your time-series in interactive line plots or simple tables.
+It is also possible to inspect, add, and edit states (data quality tags).
+For now, it is not possible to edit  time-series, but only states. To
+return \emph{myClim} with edited states back to R environment hit "Return".
+See examples.
+For more details, see the \link{myClimGui} package description and vignette.
+}
+\examples{
+\dontrun{
+# start app only for browsing
+myClimGui::mcg_run(myClim::mc_data_example_agg) 
+
+# edit states, hit "return", save modified object into R environment. 
+states.edit <- myClimGui::mcg_run(myClim::mc_data_example_agg)  
+}
 }
