@@ -169,18 +169,23 @@
 .server_states_open_form_dialog <- function(is_new_state) {
     new_tag_input <- NULL
     new_value_input <- NULL
+    message_text <- NULL
     button_text <- .texts_edit
+    title <- .texts_edit_range
     if(is_new_state) {
         new_tag_input <- shiny::textInput("new_tag", .texts_tag)
         new_value_input <- shiny::textInput("new_value", .texts_value)
+        message_text <- shiny::span(.texts_states_new_states_warning)
         button_text <- .texts_new
+        title <- .texts_states_new_states
     }
-    shiny::showModal(shiny::modalDialog(title=.texts_edit_range,
+    shiny::showModal(shiny::modalDialog(title=title,
                                         size="l",
                                         footer= shiny::tagList(
                                             shiny::modalButton(.texts_cancel),
                                             shiny::actionButton("confirm_state_form_button", button_text)
                                         ),
+                                        message_text,
                                         new_tag_input,
                                         new_value_input,
                                         shiny::tagAppendAttributes(

@@ -17,6 +17,8 @@
 #' See examples. 
 #' For more details, see the [myClimGui] package description and vignette.
 #' @param data myClim object
+#' @param ... parameters for [shiny::runApp] function
+#' @return myClim object edited in app
 #' @export
 #' @examples
 #' \dontrun{
@@ -26,10 +28,37 @@
 #' # edit states, hit "return", save modified object into R environment. 
 #' states.edit <- myClimGui::mcg_run(myClim::mc_data_example_agg)  
 #' }
-
 mcg_run <- function (data, ...) {
     app <- .app_get_shiny_object(data)
     shiny::runApp(app, ...)
+}
+
+#' Start shiny app in background
+#'
+#' This function starts the Shiny application in new process. The R console doesn't freeze.
+#'
+#' @details
+#' The function mcg_run_bg doesn't open automatically app. You must open it manually in browser
+#' with link http://localhost:<port number>. The result of function is r_process object see [callr::r_bg()].
+#' You can get myClim object returned from app by call function `r_process$get_result()`.
+#'
+#' @param data myClim object
+#' @param port of app (default 1151)
+#' @return An r_process object see [callr::r_bg()]
+#' @export
+#' @examples
+#' \dontrun{
+#'      proc <- myClimGui::mcg_run_bg(myClim::mc_data_example_agg)
+#'      # after click Return button
+#'      data <- proc$get_result()
+#' }
+mcg_run_bg <- function (data, port=1151) {
+    print(stringr::str_glue("Open http://localhost:{port} in browser."))
+    fun <- function(data, port) {
+        myClimGui::mcg_run(data, port=port, launch.browser=FALSE)
+    }
+    result <- callr::r_bg(fun, args = list(data=data, port=port))
+    return(result)
 }
 
 .app_get_shiny_object <- function(data) {

@@ -8,6 +8,11 @@ mcg_run(data, ...)
 }
 \arguments{
 \item{data}{myClim object}
+
+\item{...}{parameters for \link[shiny:runApp]{shiny::runApp} function}
+}
+\value{
+myClim object edited in app
 }
 \description{
 The main function that starts the Shiny application.
