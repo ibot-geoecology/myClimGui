@@ -4,10 +4,29 @@
 
 #' Start shiny app
 #'
-#' Main function, which start shiny application.
-#'
-#' @param data myClim data
+#' The main function that starts the Shiny application.
+#' 
+#' @details
+#' The Shiny application opens in the RStudio viewer and can be opened in a web browser from there. 
+#' The Shiny app provides an interactive tool for browsing *myClim* objects, 
+#' inspecting, and comparing time-series data. 
+#' You can view your time-series in interactive line plots or simple tables. 
+#' It is also possible to inspect, add, and edit states (data quality tags).
+#' For now, it is not possible to edit  time-series, but only states. To 
+#' return *myClim* with edited states back to R environment hit "Return". 
+#' See examples. 
+#' For more details, see the [myClimGui] package description and vignette.
+#' @param data myClim object
 #' @export
+#' @examples
+#' \dontrun{
+#' # start app only for browsing
+#' myClimGui::mcg_run(myClim::mc_data_example_agg) 
+#' 
+#' # edit states, hit "return", save modified object into R environment. 
+#' states.edit <- myClimGui::mcg_run(myClim::mc_data_example_agg)  
+#' }
+
 mcg_run <- function (data, ...) {
     app <- .app_get_shiny_object(data)
     shiny::runApp(app, ...)
