@@ -39,8 +39,9 @@ mcg_run <- function (data, ...) {
 #'
 #' @details
 #' The function mcg_run_bg doesn't open automatically app. You must open it manually in browser
-#' with link http://localhost:<port number>. The result of function is r_process object see [callr::r_bg()].
-#' You can get myClim object returned from app by call function `r_process$get_result()`.
+#' with link http://localhost:1151 (default). The result of function is r_process object see [callr::r_bg()].
+#' If you edit interactively, you can get myClim object returned from app by 
+#' call function `r_process$get_result()`.
 #'
 #' @param data myClim object
 #' @param port of app (default 1151)
