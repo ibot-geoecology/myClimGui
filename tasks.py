@@ -1,6 +1,9 @@
 from pathlib import Path
 from invoke import task
 
+def generate_documentation(c):
+    c.run(f"R -e 'devtools::document()'")
+
 @task
 def build(c):
     """
@@ -23,7 +26,12 @@ def generate(c):
     Generate source and documentation
     """
     Path("NAMESPACE").unlink(missing_ok=True)
-    c.run(f"R -e 'devtools::document()'")
+    generate_documentation(c)
+
+@task
+def generate_html(c):
+    generate_documentation(c)
+    c.run("""R -e 'pkgdown::build_site(override = list(destination = "../docs/gui"))'""")
 
 @task
 def check(c):

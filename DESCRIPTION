@@ -1,7 +1,7 @@
 Package: myClimGui
 Type: Package
 Title: GUI fo myClim package
-Version: 0.1.3
+Version: 0.1.4
 Authors@R: c(
     person("Matěj", "Man", email = "Matej.Man@ibot.cas.cz", role = "aut"),
     person("Vojtěch", "Kalčík", email = "Vojtech.Kalcik@ibot.cas.cz", role = c("aut", "cre")),
@@ -11,7 +11,8 @@ Authors@R: c(
     person("Jan", "Wild", email = "Jan.Wild@ibot.cas.cz", role = "aut"),
     person("Martin", "Kopecký", email = "Martin.Kopecky@ibot.cas.cz", role = "aut"),
     person("Institute of Botany of the Czech Academy of Sciences", role = "cph"))
-Description: GUI fo myClim package
+Description: GUI for myClim package. You can visualize and explore data series.
+    It is possible edit states using myClimGui.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
@@ -30,6 +31,8 @@ Imports:
     dplyr,
     plotly,
     tibble,
+    RColorBrewer,
+    ggplot2,
     DT,
     callr
 Roxygen: list(markdown = TRUE)
