@@ -18,7 +18,7 @@ def install(c, vignette=True):
     install myClimGui
     """
     build(c)
-    c.run("""R -e 'install.packages("../myClimGui_latest.tar.gz", repos=NULL)'""")
+    c.run("""R -e 'install.packages("../myClimGui_latest.tar.gz", lib=Sys.getenv("R_LIBS_USER"), repos=NULL, build_vignettes=TRUE)'""")
 
 @task
 def generate(c):
