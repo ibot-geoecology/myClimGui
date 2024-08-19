@@ -19,8 +19,9 @@ This function starts the Shiny application in new process. The R console doesn't
 }
 \details{
 The function mcg_run_bg doesn't open automatically app. You must open it manually in browser
-with link http://localhost:\if{html}{\out{<port number>}}. The result of function is r_process object see \code{\link[callr:r_bg]{callr::r_bg()}}.
-You can get myClim object returned from app by call function \code{r_process$get_result()}.
+with link http://localhost:1151 (default). The result of function is r_process object see \code{\link[callr:r_bg]{callr::r_bg()}}.
+If you edit interactively, you can get myClim object returned from app by
+call function \code{r_process$get_result()}.
 }
 \examples{
 \dontrun{
