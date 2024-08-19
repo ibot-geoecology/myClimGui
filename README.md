@@ -1,6 +1,15 @@
 # myClimGui
 
 # Install
+
+From GitHUB
+
+```R
+remotes::install_github("https://github.com/ibot-geoecology/myClimGui")
+```
+
+From our web pages
+
 ```R
 requiered_packages <- c("purrr", "stringr", "lubridate", "ggplot2", "plotly", "myClim", "shiny", "shinyjs", "dplyr",
                         "DT", "tibble", "shinythemes", "callr", "RColorBrewer")
