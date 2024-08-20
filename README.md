@@ -2,8 +2,6 @@
 
 # Install
 
-From GitHUB
-
 ```R
 remotes::install_github("https://github.com/ibot-geoecology/myClimGui")
 ```
