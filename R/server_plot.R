@@ -54,6 +54,18 @@
         .server_plot_change_selected_data(input, shared, last_datetime_range,
                                           zoom_range, last_filtered_data_table, render_plot_number, FALSE)
     })
+    
+    shiny::observe({
+        d <- plotly::event_data("plotly_relayout")
+        if(is.null(d) || !("xaxis.range[0]" %in% names(d))) {
+            return()
+        }
+        shiny::isolate({
+            zoom_range(myClim:::.common_as_utc_posixct(c(d[["xaxis.range[0]"]], d[["xaxis.range[1]"]])))
+            .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                              zoom_range, last_filtered_data_table, render_plot_number, FALSE)
+        })
+    })
 
     output$data_tree <- shinyTree::renderTree({.tree_get_list(shared$data)})
 
@@ -64,9 +76,12 @@
         }
         plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
-            return(NULL)
+            p <- plotly::ggplotly(ggplot2::ggplot())
+        } else {
+            p <- plotly::ggplotly(plot)
         }
-        return(plotly::ggplotly(plot))
+        p <- plotly::event_register(p, "plotly_relayout")
+        return(p)
     })
 
     output$plot_ggplot <- shiny::renderPlot({
@@ -113,8 +128,7 @@
 }
 
 .server_plot_plotly_checkbox_event <- function(input) {
-    use_plotly <- .server_plot_selected_settings(input, .app_const_SETTINGS_PLOTLY_KEY)
-    if(use_plotly) {
+    if(.server_plot_is_plotly(input)) {
         shinyjs::show(id="plot_plotly")
         shinyjs::hide(id="plot_ggplot")
     } else {
@@ -275,3 +289,6 @@
     return(stringr::str_glue("{last_datetime_range()[[1]]} - {last_datetime_range()[[2]]}"))
 }
 
+.server_plot_is_plotly <- function(input) {
+    return(.server_plot_selected_settings(input, .app_const_SETTINGS_PLOTLY_KEY))
+}
