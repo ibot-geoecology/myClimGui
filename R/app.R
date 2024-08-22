@@ -1,6 +1,7 @@
 .app_const_SETTINGS_PLOTLY_KEY <- "plotly"
 .app_const_SETTINGS_MULTI_SELECT_KEY <- "multi_select"
 .app_const_SETTINGS_COLOR_BY_LOGGER_KEY <- "color_by_logger"
+.app_const_JSON_MESSAGE <- "Input to asJSON(keep_vec_names=TRUE) is a named vector. In a future version of jsonlite, this option will not be supported, and named vectors will be translated into arrays instead of objects. If you want JSON object output, please use a named list instead. See ?toJSON.\n"
 
 #' Start shiny app
 #'
@@ -30,7 +31,19 @@
 #' }
 mcg_run <- function (data, ...) {
     app <- .app_get_shiny_object(data)
-    shiny::runApp(app, ...)
+    .app_suppress_message(shiny::runApp(app, ...), .app_const_JSON_MESSAGE)
+}
+
+.app_suppress_message <- function(.expr, text_message) {
+  eval.parent(
+    substitute(
+      withCallingHandlers( .expr, message = function (m) {
+        cm   <- conditionMessage(m)
+        cond <- text_message == cm
+        if (cond) invokeRestart("muffleMessage")   
+      })
+    )
+  )
 }
 
 #' Start shiny app in background

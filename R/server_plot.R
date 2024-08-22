@@ -79,7 +79,7 @@
         if(is.null(plot)) {
             return(NULL)
         }
-        return(plot)
+        plot
     }, res=96)
 
     output$datetime_range <- shiny::renderText({
@@ -274,3 +274,4 @@
     }
     return(stringr::str_glue("{last_datetime_range()[[1]]} - {last_datetime_range()[[2]]}"))
 }
+
