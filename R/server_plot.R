@@ -26,7 +26,7 @@
 
     shiny::observeEvent(input$sensor_select, {
         .server_plot_sensor_select_event(shared$data, input, session, previous_sensors)
-    })
+    }, ignoreNULL = FALSE)
 
     shiny::observeEvent(input$plot_dblclick, {
         .server_plot_dblclick_event(input, zoom_range)
@@ -163,6 +163,9 @@
     }
     else {
         sensor <- lubridate::setdiff(previous_sensors(), input$sensor_select)
+    }
+    if(is.null(sensor)) {
+        return()
     }
     shinyTree::updateTree(session, "data_tree", .tree_change_selection(tree, sensor, add_sensor))
     previous_sensors(input$sensor_select)
