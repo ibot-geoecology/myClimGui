@@ -1,5 +1,7 @@
 # myClimGui
 
+The myClimGui depends on [myClim package](https://github.com/ibot-geoecology/myClim) and is not a replacement for it.
+
 # Install
 
 ```R
