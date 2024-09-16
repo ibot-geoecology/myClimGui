@@ -1,6 +1,8 @@
 # myClimGui
 
-The myClimGui depends on [myClim package](https://github.com/ibot-geoecology/myClim) and is not a replacement for it.
+The myClimGui depends on [myClim package](https://github.com/ibot-geoecology/myClim).
+The package myClimGui isn't replacement of the myClim package, but it is a tool for the visualization
+of the data and editing states. It is a Shiny application.
 
 # Install
 
