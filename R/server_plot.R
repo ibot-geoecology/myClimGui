@@ -233,20 +233,18 @@
     if((multi_select && is.null(data_tree)) || (!multi_select && is.null(shared$data_loggers))) {
         return()
     }
-    if(multi_select) {
-        if(is.null(shared$selection_table)) {
-            return()
-        }
-        shared$filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
-    } else {
+    if(!multi_select) {
         selected_loggers <- shared$data_loggers[[input_data_loggers]]
         logger_type <- NULL
         if(length(selected_loggers) == 2) {
             logger_type <- selected_loggers[[2]]
         }
-        shared$filter_data <- myClim::mc_filter(shared$data, localities=selected_loggers[[1]], logger_types=logger_type)
-        shared$selection_table <- .data_get_selection_table(shared$filter_data)
+        shared$selection_table <- .data_get_selection_table(shared$data, selected_loggers[[1]], logger_type)
     }
+    if(is.null(shared$selection_table)) {
+        return()
+    }
+    shared$filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
 }
 
 .server_plot_get_plot <- function(data, input)

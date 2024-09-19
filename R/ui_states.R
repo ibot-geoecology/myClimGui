@@ -8,7 +8,7 @@
                 shiny::actionButton("delete_states_button", .texts_delete),
                 width = 12,
                 style="padding: 5px; "
-            ),
+            )
         ),
         shiny::fluidRow(
             shiny::column(
@@ -18,7 +18,14 @@
         ),
         shiny::fluidRow(
             shiny::column(
-                plotly::plotlyOutput("states_plot", width="100%"),
+                shiny::checkboxInput("states_use_plotly_checkbox", "Use plotly", value=FALSE),
+                width = 12,
+            ),
+        ),
+        shiny::fluidRow(
+            shiny::column(
+                plotly::plotlyOutput("states_plotly", width="100%"),
+                shiny::plotOutput("states_ggplot", width="100%"),
                 width = 12
             )
         )

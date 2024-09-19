@@ -95,32 +95,27 @@
     return(result)
 }
 
-.data_get_selection_table <- function(data) {
+.data_get_selection_table <- function(data, locality, logger_type_value) {
     is_agg <- myClim:::.common_is_agg_format(data)
-    
-    logger_function <- function(locality_id, logger_index, logger) {
-        step <- as.integer(logger$clean_info@step)
 
+    if(is_agg) {
+        sensors <- names(date$localities[[locality]]$sensors)
+        return(data.frame(locality_id=locality, sensor_name=sensors))
+    }
+    
+    logger_function <- function(locality_id, index) {
+        logger <- data$localities[[locality_id]]$loggers[[index]]
         return(
              list(locality_id=locality_id,
-                  logger_index=logger_index,
+                  logger_index=index,
                   sensor_name=names(logger$sensors)))
     }
 
-    locality_function <- function(locality) {
-        if(is_agg) {
-            return(
-                 list(locality_id=locality$metadata@locality_id,
-                      sensor_name=names(locality$sensors)))
-        }
-        purrr::pmap_dfr(list(
-                            locality_id = locality$metadata@locality_id,
-                            logger_index = seq_along(locality$loggers),
-                            logger = locality$loggers),
-                            logger_function)
-    }
+    loggers_table <- myClim::mc_info_logger(data)
+    loggers_table <- dplyr::filter(loggers_table, .data$locality_id == locality & .data$logger_type == logger_type_value)
+    loggers_table <- dplyr::select(loggers_table, "locality_id", "index")
 
-    result <- purrr::map_dfr(data$localities, locality_function)
+    result <- purrr::pmap_dfr(loggers_table, logger_function)
     return(result)
 }
 

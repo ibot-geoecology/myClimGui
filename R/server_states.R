@@ -73,6 +73,16 @@
         shiny::removeModal()
     })
     
+    shiny::observeEvent(input$states_use_plotly_checkbox, {
+        if(input$states_use_plotly_checkbox) {
+            shinyjs::show(id="states_plotly")
+            shinyjs::hide(id="states_ggplot")
+        } else {
+            shinyjs::show(id="states_ggplot")
+            shinyjs::hide(id="states_plotly")
+        }
+    })
+
     output$states_table <- DT::renderDataTable({
         if(is.null(states_table_value())) {
             return(NULL)
@@ -80,18 +90,21 @@
         return(.server_states_get_table_for_dt(states_table_value()))
     })
     
-    output$states_plot <- plotly::renderPlotly({
-        selected_rows <- input$states_table_rows_selected
-        if(length(selected_rows) == 0) {
+    output$states_plotly <- plotly::renderPlotly({
+        if(!input$states_use_plotly_checkbox) {
             return(NULL)
         }
-        states_table <- .server_states_get_table_for_plot(states_table_value(), selected_rows)
-        if(nrow(states_table) == 0) {
-            return(NULL)
-        }
-        plot <- .plot_states(shared, states_table)
+        plot <- .server_states_get_plot(shared, input, states_table_value)
         return(plotly::ggplotly(plot))
     })
+    
+    output$states_ggplot <- shiny::renderPlot({
+        if(input$states_use_plotly_checkbox) {
+            return(NULL)
+        }
+        plot <- .server_states_get_plot(shared, input, states_table_value)
+        return(plot)
+    }, res = 96)
     
     output$edit_range_table <- DT::renderDataTable({
         if(is.null(edit_range_table_value())) {
@@ -117,6 +130,7 @@
         }
         return(.texts_states_selected_too_many_rows)
     })
+
 }
 
 .server_states_get_table_for_dt <- function(states_table){
@@ -140,7 +154,13 @@
 }
 
 .server_states_reload_table <- function(shared, states_table_value) {
-    states_table_value(myClim::mc_info_states(shared$filter_data))
+    result <- myClim::mc_info_states(shared$data)
+    selection_table <- shared$selection_table
+    selection_table$selected <- TRUE
+    result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_index", "sensor_name"))
+    result <- dplyr::filter(result, !is.na(.data$selected))
+    result <- dplyr::select(result, -"selected")
+    states_table_value(result)
 }
 
 .server_states_get_table_for_edit_range <- function(shared, states_table, selected_rows) {
@@ -239,4 +259,17 @@
     
     result <- myClim::mc_states_insert(shared$data, selection_table)
     return(result)
+}
+
+.server_states_get_plot <- function(shared, input, states_table_value) {
+    selected_rows <- input$states_table_rows_selected
+    if(length(selected_rows) == 0) {
+        return(NULL)
+    }
+    states_table <- .server_states_get_table_for_plot(states_table_value(), selected_rows)
+    if(nrow(states_table) == 0) {
+        return(NULL)
+    }
+    plot <- .plot_states(shared, states_table)
+    return(plot)
 }

@@ -13,7 +13,6 @@
 
 .ui_plot_sidebar <- function(data, data_loggers) {
     shiny::sidebarPanel(
-        shinyjs::useShinyjs(),
         shiny::checkboxGroupInput("settings_checkboxes", label=NULL,
                                   choices=c("Multi select" = .app_const_SETTINGS_MULTI_SELECT_KEY,
                                             "Plotly" = .app_const_SETTINGS_PLOTLY_KEY,

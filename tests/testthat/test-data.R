@@ -42,8 +42,8 @@ test_that(".data_filter_by_selection_table", {
 })
 
 test_that(".data_get_selection_table", {
-    selection_table <- .data_get_selection_table(myClim::mc_data_example_clean)
+    selection_table <- .data_get_selection_table(myClim::mc_data_example_clean, "A1E05", "Dendro")
     expect_equal(colnames(selection_table), c("locality_id", "logger_index", "sensor_name"))
-    expect_equal(length(unique(selection_table$locality_id)), 3)
-    expect_equal(nrow(selection_table), 13)
+    expect_equal(nrow(selection_table), 2)
+    expect_equal(selection_table$logger_index, c(2, 2))
 })
