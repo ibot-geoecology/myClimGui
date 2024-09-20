@@ -85,7 +85,7 @@ mcg_run_bg <- function (data, port=1151) {
         data_table_value <- shiny::reactiveVal()
         
         shiny::observeEvent(input$navbar_page, {
-            if(is.null(shared$filter_data)) {
+            if(is.null(shared$selection_table)) {
                 return()
             }
             tab_value <- shiny::req(input$navbar_page)
@@ -114,7 +114,6 @@ mcg_run_bg <- function (data, port=1151) {
     result$data_loggers <- data_loggers
     result$data_range <- .data_get_date_range(data)
     result$selection_table <- NULL
-    result$filter_data <- NULL
     result$crop_range <- NULL
     return(result)
 }

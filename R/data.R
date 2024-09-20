@@ -35,12 +35,13 @@
     return(as.environment(items))
 }
 
-.data_get_filtered_data_table <- function(data) {
-    if(myClim:::.common_is_agg_format(data)) {
-        return(data.frame(locality_id=names(data$localities)))
+.data_get_filtered_data_table <- function(selection_table) {
+    if("logger_index" %in% colnames(selection_table)) {
+        result <- dplyr::select(selection_table, "locality_id", "logger_index")
+    } else {
+        result <- dplyr::select(selection_table, "locality_id")
     }
-    result <- myClim::mc_info_logger(data)
-    return(dplyr::select(result, "locality_id", "index", "serial_number", "logger_type"))
+    return(dplyr::distinct(result))
 }
 
 .data_edit_states <- function(data, changed_table, new_values) {
@@ -158,3 +159,37 @@
     return(result)
 }
 
+.data_get_dataview_table <- function(data, selection_table, crop_range) {
+    filter_data <- .data_filter_by_selection_table(data, selection_table)
+    crop_data <- myClim::mc_prep_crop(filter_data, crop_range[[1]], crop_range[[2]])
+    result <- myClim::mc_reshape_wide(crop_data)
+    result <- .data_rename_dataview_columns(data, selection_table, result)
+    result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
+    return(result)
+}
+
+.data_rename_dataview_columns <- function(data, selection_table, wide_table){
+    if(myClim:::.common_is_agg_format(data)) {
+        return(wide_table)
+    }
+    name_env <- new.env()
+    name_env$columns <- colnames(wide_table)
+    selection_table <- dplyr::group_by(selection_table, .data$locality_id)
+
+    rename_function <- function(old_column_preffix, new_column_preffix) {
+        old_column_preffix <- stringr::fixed(old_column_preffix)
+        condition <- stringr::str_starts(name_env$columns, old_column_preffix)
+        name_env$columns[condition] <- stringr::str_replace(name_env$columns[condition], old_column_preffix, new_column_preffix)
+    }
+
+    group_function <- function(group_table, .y) {
+        indexes <- sort(unique(group_table$logger_index))
+        wrong_indexes <- seq_along(indexes)
+        old_column_preffix <- as.character(stringr::str_glue("{.y$locality_id[[1]]}_{wrong_indexes}_"))
+        new_column_preffix <- stringr::str_glue("{.y$locality_id[[1]]}_{indexes}_")
+        purrr::walk2(old_column_preffix, new_column_preffix, rename_function)
+    }
+    dplyr::group_walk(selection_table, group_function)
+    colnames(wide_table) <- name_env$columns
+    return(wide_table)
+}

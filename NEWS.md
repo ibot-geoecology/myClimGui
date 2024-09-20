@@ -1,3 +1,8 @@
+# myClimGui 1.0.1
+* The issue with `logger_index` in tables has been fixed.
+* The single logger selection mode is now the default.
+* For performance reasons, the states plot uses ggplot by default.
+
 # myClimGui 1.0.0
 * JSON warnings are now hidden.
 * Range filter now works correctly with Plotly zooming.

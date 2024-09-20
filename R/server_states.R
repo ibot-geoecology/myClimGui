@@ -24,7 +24,8 @@
    
     shiny::observeEvent(input$new_state_button, {
         form_mode("new")
-        edit_range_table_value(.server_states_get_table_for_states_form(shared$filter_data, shared$crop_range))
+        table_data <- .data_get_dataview_table(shared$data, shared$selection_table, shared$crop_range)
+        edit_range_table_value(table_data)
         .server_states_open_form_dialog(TRUE)
     })
    
@@ -149,7 +150,6 @@
 }
 
 .server_states_reload_data_after_edit <- function(shared, states_table_value) {
-    shared$filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
     .server_states_reload_table(shared, states_table_value)
 }
 
@@ -167,15 +167,7 @@
     states_table <- states_table[selected_rows, ]
     selection_table <- dplyr::select(states_table, "locality_id", "logger_index", "sensor_name")
     selection_table <- dplyr::distinct(selection_table)
-    data <- .data_filter_by_selection_table(shared$filter_data, selection_table)
-    result <- .server_states_get_table_for_states_form(data, shared$crop_range)
-    return(result)
-}
-
-.server_states_get_table_for_states_form <- function(data, crop_range) {
-    crop_data <- myClim::mc_prep_crop(data, crop_range[[1]], crop_range[[2]])
-    result <- myClim::mc_reshape_wide(crop_data)
-    result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
+    result <- .data_get_dataview_table(shared$data, selection_table, shared$crop_range)
     return(result)
 }
 
@@ -240,7 +232,7 @@
 
 
 .server_states_add_states <- function(shared, selected_datetimes, tag, value) {
-    ranges_table <- .data_selection_table_add_range(shared$filter_data, shared$selection_table)
+    ranges_table <- .data_selection_table_add_range(shared$data, shared$selection_table)
     start <- lubridate::ymd_hms(selected_datetimes[[1]])
     end <- start
     if(length(selected_datetimes) > 1) {

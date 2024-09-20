@@ -5,10 +5,17 @@ test_that(".data_get_sensors", {
 })
 
 test_that(".data_get_filtered_data_table", {
-    table <- .data_get_filtered_data_table(myClim::mc_data_example_clean)
-    expect_equal(colnames(table), c("locality_id", "index", "serial_number", "logger_type"))
-    table <- .data_get_filtered_data_table(myClim::mc_data_example_agg)
-    expect_equal(colnames(table), "locality_id")
+    selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
+                                      logger_index = c(2, 2, 2),
+                                      sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
+    table <- .data_get_filtered_data_table(selection_table)
+    expect_equal(nrow(table), 2)
+    expect_equal(colnames(table), c("locality_id", "logger_index"))
+    selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
+                                      sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
+    table <- .data_get_filtered_data_table(selection_table)
+    expect_equal(nrow(table), 2)
+    expect_equal(colnames(table), c("locality_id"))
 })
 
 test_that(".data_get_date_range", {
@@ -46,4 +53,14 @@ test_that(".data_get_selection_table", {
     expect_equal(colnames(selection_table), c("locality_id", "logger_index", "sensor_name"))
     expect_equal(nrow(selection_table), 2)
     expect_equal(selection_table$logger_index, c(2, 2))
+})
+
+test_that(".data_get_dataview_table", {
+    data <- myClim::mc_data_example_clean
+    selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
+                                      logger_index = c(2, 2, 2),
+                                      sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
+    crop_range <- c(lubridate::ymd_h("2020-11-01 0"), lubridate::ymd_h("2020-12-01 0"))
+    table <- .data_get_dataview_table(data, selection_table, crop_range)
+    expect_equal(colnames(table), c("datetime", "A1E05_2_92201058_Dendro_T", "A2E32_2_20024338_HOBO_T", "A2E32_2_20024338_HOBO_RH"))
 })
