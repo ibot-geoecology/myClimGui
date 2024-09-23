@@ -172,13 +172,14 @@
     if(myClim:::.common_is_agg_format(data)) {
         return(wide_table)
     }
+    old_columns <- colnames(wide_table)
     name_env <- new.env()
     name_env$columns <- colnames(wide_table)
     selection_table <- dplyr::group_by(selection_table, .data$locality_id)
 
     rename_function <- function(old_column_preffix, new_column_preffix) {
         old_column_preffix <- stringr::fixed(old_column_preffix)
-        condition <- stringr::str_starts(name_env$columns, old_column_preffix)
+        condition <- stringr::str_starts(old_columns, old_column_preffix)
         name_env$columns[condition] <- stringr::str_replace(name_env$columns[condition], old_column_preffix, new_column_preffix)
     }
 

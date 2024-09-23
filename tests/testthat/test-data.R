@@ -64,3 +64,13 @@ test_that(".data_get_dataview_table", {
     table <- .data_get_dataview_table(data, selection_table, crop_range)
     expect_equal(colnames(table), c("datetime", "A1E05_2_92201058_Dendro_T", "A2E32_2_20024338_HOBO_T", "A2E32_2_20024338_HOBO_RH"))
 })
+
+test_that(".data_get_dataview_table name colision", {
+    data <- myClim::mc_read_files("../data/dataview_table", "TOMST", silent = TRUE)
+    selection_table <- tibble::tibble(locality_id = c("91184101", "91184101"),
+                                      logger_index = c(2, 3),
+                                      sensor_name = c("Thermo_T", "Thermo_T"))
+    crop_range <- c(lubridate::ymd_hm("2020-10-28 8:45"), lubridate::ymd_hm("2020-10-28 11:15"))
+    table <- .data_get_dataview_table(data, selection_table, crop_range)
+    expect_equal(colnames(table), c("datetime", "91184101_2_91184101_Thermo_T", "91184101_3_91184101_Thermo_T"))
+})

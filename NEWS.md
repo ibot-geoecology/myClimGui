@@ -1,3 +1,6 @@
+# myClimGui 1.0.2
+* The issue with `logger_index` in some cases persisted. This has been fixed.
+
 # myClimGui 1.0.1
 * The issue with `logger_index` in tables has been fixed.
 * The single logger selection mode is now the default.

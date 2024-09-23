@@ -1,7 +1,7 @@
 Package: myClimGui
 Type: Package
 Title: GUI fo myClim package
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(
     person("Matěj", "Man", email = "Matej.Man@ibot.cas.cz", role = "aut"),
     person("Vojtěch", "Kalčík", email = "Vojtech.Kalcik@ibot.cas.cz", role = c("aut", "cre")),
