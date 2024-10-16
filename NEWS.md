@@ -1,3 +1,6 @@
+# myClimGui 1.0.3
+* The issue with agg format has been fixed.
+
 # myClimGui 1.0.2
 * The issue with `logger_index` in some cases persisted. This has been fixed.
 

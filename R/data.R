@@ -100,8 +100,10 @@
     is_agg <- myClim:::.common_is_agg_format(data)
 
     if(is_agg) {
-        sensors <- names(date$localities[[locality]]$sensors)
-        return(data.frame(locality_id=locality, sensor_name=sensors))
+        sensors <- names(data$localities[[locality]]$sensors)
+        return(data.frame(locality_id=locality,
+                          logger_index=NA,
+                          sensor_name=sensors))
     }
     
     logger_function <- function(locality_id, index) {

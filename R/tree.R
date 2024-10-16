@@ -38,7 +38,7 @@
         locality_id <- names(item)[[1]]
         second_name <- names(item[[1]])[[1]]
         if(is_agg) {
-            return(list(locality_id=locality_id, sensor_name=second_name))
+            return(list(locality_id=locality_id, logger_index=NA, sensor_name=second_name))
         }
         logger_index <- as.double(stringr::str_extract(second_name, "\\[(\\d+)\\].*", group=1))
         sensor_name <- names(item[[1]][[1]])[[1]]
