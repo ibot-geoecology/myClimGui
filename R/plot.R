@@ -17,7 +17,7 @@
 
 .plot_states_get_range <- function(data, groupped_states) {
     is_agg <- myClim:::.common_is_agg_format(data)
-    ic_cleaned <- TRUE
+    is_cleaned <- TRUE
     if(!is_agg) {
         is_cleaned <- myClim:::.prep_is_datetime_step_processed_in_object(data)
     }
@@ -73,8 +73,8 @@
 }
 
 .plot_get_states_rectangles <- function(data_table, states) {
-    min_value <- min(data_table$value)
-    max_value <- max(data_table$value)
+    min_value <- min(data_table$value, na.rm=TRUE)
+    max_value <- max(data_table$value, na.rm=TRUE)
     tags <- unique(states$tag)
     tags_table <- tibble::tibble(i = seq_along(tags),
                                  tag = tags)
