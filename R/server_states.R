@@ -96,6 +96,9 @@
             return(NULL)
         }
         plot <- .server_states_get_plot(shared, input, states_table_value)
+        if(is.null(plot)) {
+            return(NULL)
+        }
         return(plotly::ggplotly(plot))
     })
     

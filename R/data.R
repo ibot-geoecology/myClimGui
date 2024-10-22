@@ -28,7 +28,7 @@
         return(as.environment(result))
     }
     info <- myClim::mc_info_logger(data)
-    info <- dplyr::select(info, .data$locality_id, .data$logger_type)
+    info <- dplyr::select(info, "locality_id", "logger_type")
     info <- dplyr::distinct(info)
     items <- purrr::map2(info$locality_id, info$logger_type, ~ c(.x, .y))
     names(items) <- paste0(info$locality_id, ": ", info$logger_type)
