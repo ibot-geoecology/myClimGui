@@ -47,7 +47,7 @@
             return()
         }
         selection_table <- .tree_get_selection_table(shared$data, slices)
-        if(!is.null(shared$selectopn_table) && dplyr::all_equal(selection_table, shared$selection_table)) {
+        if(!is.null(shared$selectopn_table) && isTRUE(all.equal(selection_table, shared$selection_table))) {
             return()
         }
         shared$selection_table <- selection_table
@@ -70,6 +70,9 @@
     output$data_tree <- shinyTree::renderTree({.tree_get_list(shared$data)})
 
     output$plot_plotly <- plotly::renderPlotly({
+        if(!shiny::isolate(.server_plot_is_plotly(input))) {
+            return(plotly::ggplotly(ggplot2::ggplot()))
+        }
         crop_data <- NULL
         if(!is.null(shared$selection_table)) {
             filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
@@ -86,6 +89,9 @@
     })
 
     output$plot_ggplot <- shiny::renderPlot({
+        if(shiny::isolate(.server_plot_is_plotly(input))) {
+            return(NULL)
+        }
         zoom_range_value <- zoom_range()
         crop_data <- NULL
         if(!is.null(shared$selection_table)) {
@@ -222,6 +228,14 @@
     if(!is.null(zoom_range())) {
         crop_range <- zoom_range()
     }
+    if(!is.null(shared$last_crop_range_params$crop_range) &&
+       !is.null(shared$last_crop_range_params$selection_table) &&
+       isTRUE(all.equal(crop_range, shared$last_crop_range_params$crop_range)) &&
+       isTRUE(all.equal(shared$selection_table, shared$last_crop_range_params$selection_table))) {
+        return(shared$crop_range)
+    }
+    shared$last_crop_range_params$crop_range <- crop_range
+    shared$last_crop_range_params$selection_table <- shared$selection_table
     filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
     crop_data <- myClim::mc_prep_crop(filter_data, crop_range[[1]], crop_range[[2]])
     return(.data_get_date_range(crop_data))

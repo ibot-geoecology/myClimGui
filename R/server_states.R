@@ -157,8 +157,9 @@
 }
 
 .server_states_reload_table <- function(shared, states_table_value) {
-    result <- myClim::mc_info_states(shared$data)
     selection_table <- shared$selection_table
+    filter_data <- myClim::mc_filter(shared$data, localities = unique(selection_table$locality_id))
+    result <- myClim::mc_info_states(filter_data)
     selection_table$selected <- TRUE
     result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_index", "sensor_name"))
     result <- dplyr::filter(result, !is.na(.data$selected))

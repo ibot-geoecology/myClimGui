@@ -114,8 +114,9 @@
                   sensor_name=names(logger$sensors)))
     }
 
-    loggers_table <- myClim::mc_info_logger(data)
-    loggers_table <- dplyr::filter(loggers_table, .data$locality_id == locality & .data$logger_type == logger_type_value)
+    filtered_data <- myClim::mc_filter(data, localities=locality)
+    loggers_table <- myClim::mc_info_logger(filtered_data)
+    loggers_table <- dplyr::filter(loggers_table, .data$logger_type == logger_type_value)
     loggers_table <- dplyr::select(loggers_table, "locality_id", "index")
 
     result <- purrr::pmap_dfr(loggers_table, logger_function)

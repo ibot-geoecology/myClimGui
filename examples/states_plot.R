@@ -2,7 +2,7 @@ library(myClim)
 library(tibble)
 library(Cairo)
 
-#devtools::load_all()
+devtools::load_all()
 data <- mc_data_example_clean
 
 states <- tribble(

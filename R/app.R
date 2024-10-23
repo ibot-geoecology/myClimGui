@@ -115,5 +115,7 @@ mcg_run_bg <- function (data, port=1151) {
     result$data_range <- .data_get_date_range(data)
     result$selection_table <- NULL
     result$crop_range <- NULL
+    result$last_crop_range_params <- list(crop_range = NULL,
+                                          selection_table = NULL)
     return(result)
 }

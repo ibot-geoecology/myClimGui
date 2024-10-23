@@ -1,3 +1,6 @@
+# myClimGui 1.0.4
+* The app has been optimized for better performance.
+
 # myClimGui 1.0.3
 * The agg format issues have been fixed.
 * The NA value issue in states plot has been fixed.
