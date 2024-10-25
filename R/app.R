@@ -90,7 +90,7 @@ mcg_run_bg <- function (data, port=1151) {
             }
             tab_value <- shiny::req(input$navbar_page)
             if(tab_value == .ui_const_STATES_TITLE) {
-                .server_states_reload_table(shared, states_table_value)
+                .server_states_reload_table(input, session, shared, states_table_value)
             } else if(tab_value == .ui_const_DATA_TITLE) {
                 data_table_value(.server_data_get_table(shared))
             }

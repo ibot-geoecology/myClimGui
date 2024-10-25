@@ -8,7 +8,7 @@
         
     shiny::observeEvent(input$states_table_cell_edit, {
         shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value())
-        .server_states_reload_data_after_edit(shared, states_table_value)
+        .server_states_reload_data_after_edit(input, session, shared, states_table_value)
     })
     
     shiny::observeEvent(input$range_button, {
@@ -18,7 +18,8 @@
             return(NULL)
         }
         form_mode("edit")
-        edit_range_table_value(.server_states_get_table_for_edit_range(shared, states_table_value(), selected_rows))
+        df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
+        edit_range_table_value(.server_states_get_table_for_edit_range(shared, df_states, selected_rows))
         .server_states_open_form_dialog(FALSE)
     })
    
@@ -46,9 +47,10 @@
    
     shiny::observeEvent(input$confirm_delete_states_button, {
         selected_rows <- input$states_table_rows_selected
-        delete_table <- states_table_value()[selected_rows, ]
+        df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
+        delete_table <- df_states[selected_rows, ]
         shared$data <- .data_delete_states(shared$data, delete_table)
-        .server_states_reload_data_after_edit(shared, states_table_value)
+        .server_states_reload_data_after_edit(input, session, shared, states_table_value)
         shiny::removeModal()
     })
    
@@ -70,7 +72,7 @@
             shared$data <- .server_states_edit_range(shared$data, changed_table, selected_datetimes)
         }
         
-        .server_states_reload_data_after_edit(shared, states_table_value)
+        .server_states_reload_data_after_edit(input, session, shared, states_table_value)
         shiny::removeModal()
     })
     
@@ -84,11 +86,20 @@
         }
     })
 
+    shiny::observeEvent(input$filter_by_plot_checkbox, {
+        tab_value <- shiny::req(input$navbar_page)
+        if(tab_value != .ui_const_STATES_TITLE) {
+            return()
+        }
+        .server_states_reload_table(input, session, shared, states_table_value)
+    })
+
     output$states_table <- DT::renderDataTable({
         if(is.null(states_table_value())) {
             return(NULL)
         }
-        return(.server_states_get_table_for_dt(states_table_value()))
+        df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
+        return(.server_states_get_table_for_dt(df_states))
     })
     
     output$states_plotly <- plotly::renderPlotly({
@@ -152,18 +163,28 @@
     return(states_table)
 }
 
-.server_states_reload_data_after_edit <- function(shared, states_table_value) {
-    .server_states_reload_table(shared, states_table_value)
+.server_states_reload_data_after_edit <- function(input, session, shared, states_table_value) {
+    .server_states_reload_table(input, session, shared, states_table_value)
 }
 
-.server_states_reload_table <- function(shared, states_table_value) {
-    selection_table <- shared$selection_table
-    filter_data <- myClim::mc_filter(shared$data, localities = unique(selection_table$locality_id))
-    result <- myClim::mc_info_states(filter_data)
-    selection_table$selected <- TRUE
-    result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_index", "sensor_name"))
-    result <- dplyr::filter(result, !is.na(.data$selected))
-    result <- dplyr::select(result, -"selected")
+.server_states_reload_table <- function(input, session, shared, states_table_value) {
+    if(input$filter_by_plot_checkbox) {
+        selection_table <- shared$selection_table
+        filter_data <- myClim::mc_filter(shared$data, localities = unique(selection_table$locality_id))
+        result <- myClim::mc_info_states(filter_data)
+        selection_table$selected <- TRUE
+        result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_index", "sensor_name"))
+        result <- dplyr::filter(result, !is.na(.data$selected))
+        result <- dplyr::select(result, -"selected")
+    } else {
+        result <- myClim::mc_info_states(shared$data)
+    }
+    tags <- c("all", sort(unique(result$tag)))
+    selected_tag <- input$tag_select
+    if(!(selected_tag %in% tags)) {
+        selected_tag <- "all"
+    }
+    shiny::updateSelectInput(session, "tag_select", choices = tags, selected = selected_tag)
     states_table_value(result)
 }
 
@@ -262,10 +283,19 @@
     if(length(selected_rows) == 0) {
         return(NULL)
     }
-    states_table <- .server_states_get_table_for_plot(states_table_value(), selected_rows)
+    df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
+    states_table <- .server_states_get_table_for_plot(df_states, selected_rows)
     if(nrow(states_table) == 0) {
         return(NULL)
     }
     plot <- .plot_states(shared, states_table)
     return(plot)
+}
+
+.server_states_get_filtered_dataframe <- function(states_table_value, selected_tag) {
+    result <- states_table_value()
+    if(selected_tag != "all") {
+        result <- dplyr::filter(result, .data$tag == selected_tag)
+    }
+    return(result)
 }

@@ -2,7 +2,7 @@ library(myClim)
 library(tibble)
 library(Cairo)
 
-devtools::load_all()
+#devtools::load_all()
 data <- mc_data_example_clean
 
 states <- tribble(
@@ -17,4 +17,5 @@ data <- mc_states_insert(data, states)
 #states <- mc_info_states(data)[1, ]
 #print(.plot_states(data, states))
 
-new_data <- mcg_run(data, port=1151, launch.browser=FALSE)
+#new_data <- mcg_run(data, port=1151, launch.browser=FALSE)
+new_data <- mcg_run(data)

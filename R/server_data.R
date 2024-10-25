@@ -3,7 +3,7 @@
         if(is.null(data_table_value())) {
             return(NULL)
         }
-        data_table <-DT::datatable(data_table_value(),
+        data_table <- DT::datatable(data_table_value(),
                                    options = list(pageLength = 1000))
         return(data_table)
     })
