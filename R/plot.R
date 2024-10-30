@@ -2,8 +2,9 @@
 
 .plot_states <- function(shared, states_table) {
     groupped_table <- dplyr::group_by(states_table, .data$locality_id, .data$logger_index, .data$sensor_name)
-    range <- .plot_states_get_range(shared$data, groupped_table)
-    data_table <- .plot_states_get_data(shared$data, groupped_table, range)
+    filter_data <- myClim::mc_filter(shared$data, localities = unique(states_table$locality_id))
+    range <- .plot_states_get_range(filter_data, groupped_table)
+    data_table <- .plot_states_get_data(filter_data, groupped_table, range)
     p <- ggplot2::ggplot(data=data_table, ggplot2::aes(x=.data$datetime, y=.data$value, group=.data$name)) +
          ggplot2::geom_line(ggplot2::aes(color=.data$name)) +
          ggplot2::theme(legend.position="bottom") +

@@ -25,7 +25,8 @@
    
     shiny::observeEvent(input$new_state_button, {
         form_mode("new")
-        table_data <- .data_get_dataview_table(shared$data, shared$selection_table, shared$crop_range)
+        crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
+        table_data <- .data_get_dataview_table(shared$data, shared$selection_table, crop_interval)
         edit_range_table_value(table_data)
         .server_states_open_form_dialog(TRUE)
     })
@@ -103,7 +104,7 @@
     })
     
     output$states_plotly <- plotly::renderPlotly({
-        if(!input$states_use_plotly_checkbox) {
+        if(!input$states_show_plot_checkbox || !input$states_use_plotly_checkbox) {
             return(NULL)
         }
         plot <- .server_states_get_plot(shared, input, states_table_value)
@@ -114,12 +115,25 @@
     })
     
     output$states_ggplot <- shiny::renderPlot({
-        if(input$states_use_plotly_checkbox) {
+        if(!input$states_show_plot_checkbox || input$states_use_plotly_checkbox) {
             return(NULL)
         }
         plot <- .server_states_get_plot(shared, input, states_table_value)
         return(plot)
     }, res = 96)
+    
+    output$states_data_table <- DT::renderDataTable({
+        if(!input$states_show_data_checkbox) {
+            return(NULL)
+        }
+        selected_rows <- input$states_table_rows_selected
+        if(length(selected_rows) == 0) {
+            return(NULL)
+        }
+        states_table <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
+        states_table <- states_table[selected_rows, ]
+        return(.server_states_get_data_table_for_dt(shared, states_table))
+    })
     
     output$edit_range_table <- DT::renderDataTable({
         if(is.null(edit_range_table_value())) {
@@ -192,7 +206,8 @@
     states_table <- states_table[selected_rows, ]
     selection_table <- dplyr::select(states_table, "locality_id", "logger_index", "sensor_name")
     selection_table <- dplyr::distinct(selection_table)
-    result <- .data_get_dataview_table(shared$data, selection_table, shared$crop_range)
+    crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
+    result <- .data_get_dataview_table(shared$data, selection_table, crop_interval)
     return(result)
 }
 
@@ -297,5 +312,16 @@
     if(selected_tag != "all") {
         result <- dplyr::filter(result, .data$tag == selected_tag)
     }
+    return(result)
+}
+
+.server_states_get_data_table_for_dt <- function(shared, states_table){
+    selection_table <- dplyr::select(states_table, "locality_id", "logger_index", "sensor_name")
+    selection_table <- dplyr::distinct(selection_table)
+    intervals <- lubridate::interval(states_table$start, states_table$end)
+    data_df <- .data_get_dataview_table(shared$data, selection_table, intervals)
+
+    result <-DT::datatable(data_df,
+                           options = list(pageLength = 1000))
     return(result)
 }

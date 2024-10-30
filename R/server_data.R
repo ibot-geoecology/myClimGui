@@ -10,6 +10,7 @@
 }
 
 .server_data_get_table <- function(shared){
-    result <- .data_get_dataview_table(shared$data, shared$selection_table, shared$crop_range)
+    crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
+    result <- .data_get_dataview_table(shared$data, shared$selection_table, crop_interval)
     return(result)
 }

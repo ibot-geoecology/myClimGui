@@ -162,11 +162,34 @@
     return(result)
 }
 
-.data_get_dataview_table <- function(data, selection_table, crop_range) {
+.data_get_dataview_table <- function(data, selection_table, intervals) {
     filter_data <- .data_filter_by_selection_table(data, selection_table)
-    crop_data <- myClim::mc_prep_crop(filter_data, crop_range[[1]], crop_range[[2]])
-    result <- myClim::mc_reshape_wide(crop_data)
-    result <- .data_rename_dataview_columns(data, selection_table, result)
+    start_datetime <- min(lubridate::int_start(intervals))
+    end_datetime <- max(lubridate::int_end(intervals))
+    crop_data <- myClim::mc_prep_crop(filter_data, start_datetime, end_datetime)
+    is_agg <- myClim:::.common_is_agg_format(data)
+    sensors_item <- NULL
+    if(length(crop_data$localities) == 1) {
+        if(is_agg) {
+            sensors_itme <- crop_data$localities[[1]]
+        } else if (length(crop_data$localities[[1]]$loggers) == 1) {
+            sensors_item <- crop_data$localities[[1]]$loggers[[1]]
+        }
+    }
+    if(is.null(sensors_item)) {
+        result <- myClim::mc_reshape_wide(crop_data)
+        result <- .data_rename_dataview_columns(data, selection_table, result)
+    } else {
+        result <- data.frame(datetime=sensors_item$datetime)
+        for(sensor_name in names(sensors_item$sensors)) {
+            result[[sensor_name]] <- sensors_item$sensors[[sensor_name]]$values
+        }
+    }
+    if(length(intervals) > 1) {
+        conditions <- purrr::map(intervals, ~ lubridate::`%within%`(result$datetime, .x))
+        datetime_condition <- purrr::reduce(conditions, `|`)
+        result <- dplyr::filter(result, datetime_condition)
+    }
     result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
     return(result)
 }

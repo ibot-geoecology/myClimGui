@@ -1,3 +1,10 @@
+# myClimGui 1.0.
+* The performance of states loading has been improved.
+* The data table has been added to the states tab.
+* The tag filter selection has been added.
+* All states can be displayed in the states tab.
+* The issue init selection of the range has been fixed.
+
 # myClimGui 1.0.4
 * The app has been optimized for better performance.
 

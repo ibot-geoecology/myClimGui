@@ -40,6 +40,9 @@
     })
     
     shiny::observeEvent(input$data_tree, {
+        if(!multi_select) {
+            return()
+        }
         data_tree <- input$data_tree
         slices <- shinyTree::get_selected(data_tree, format="slices")
         if(length(slices) == 0) {
@@ -105,8 +108,12 @@
         plot
     }, res=96)
 
-    output$datetime_range <- shiny::renderText({
+    output$datetime_range_text <- shiny::renderText({
         .server_plot_get_datetime_range(last_datetime_range)
+    })
+
+    output$selected_item_text <- shiny::renderText({
+        .server_plot_get_selected_item_text(shared, last_filtered_data_table)
     })
 }
 
@@ -190,12 +197,13 @@
 
 .server_plot_change_selected_data <- function(input, shared, last_datetime_range, zoom_range, last_filtered_data_table,
                                               render_plot_number, refresh_plot) {
-    shared$crop_range <- NULL
     shiny::isolate(.server_plot_set_selected_data(input, shared))
     if(is.null(shared$selection_table)) {
+        shared$crop_range <- NULL
         return()
     }
     if(.server_plot_reset_zoom_range_if_need(shared$selection_table, last_filtered_data_table, zoom_range)) {
+        shared$crop_range <- NULL
         return()
     }
     
@@ -302,6 +310,27 @@
     return(stringr::str_glue("{last_datetime_range()[[1]]} - {last_datetime_range()[[2]]}"))
 }
 
+.server_plot_get_selected_item_text <- function(shared, last_filtered_data_table){
+    filtered_data_table <- last_filtered_data_table()
+    localities <- unique(filtered_data_table$locality_id)
+    if(length(localities) > 1){
+        return("")
+    }
+    locality_id <- localities[[1]]
+    if(myClim:::.common_is_agg_format(data)) {
+        return(stringr::str_glue("{locality_id}"))
+    }
+    logger_indexes <- unique(filtered_data_table$logger_index)
+    locality_item <- shared$data$localities[[locality_id]]
+    serial_numbers <- unique(purrr::map_chr(logger_indexes, ~ locality_item$loggers[[.x]]$metadata@serial_number))
+    serial_numbers <- serial_numbers[!is.na(serial_numbers)]
+    if(length(serial_numbers) != 1){
+        return(stringr::str_glue("{locality_id}"))
+    }
+    return(stringr::str_glue("{locality_id} - {serial_numbers}"))
+}
+
 .server_plot_is_plotly <- function(input) {
     return(.server_plot_selected_settings(input, .app_const_SETTINGS_PLOTLY_KEY))
 }
+

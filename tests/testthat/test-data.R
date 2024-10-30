@@ -60,9 +60,18 @@ test_that(".data_get_dataview_table", {
     selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
                                       logger_index = c(2, 2, 2),
                                       sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
-    crop_range <- c(lubridate::ymd_h("2020-11-01 0"), lubridate::ymd_h("2020-12-01 0"))
-    table <- .data_get_dataview_table(data, selection_table, crop_range)
+    crop_intervals <- lubridate::interval(lubridate::ymd_h("2020-11-01 0"), lubridate::ymd_h("2020-12-01 0"))
+    table <- .data_get_dataview_table(data, selection_table, crop_intervals)
     expect_equal(colnames(table), c("datetime", "A1E05_2_92201058_Dendro_T", "A2E32_2_20024338_HOBO_T", "A2E32_2_20024338_HOBO_RH"))
+    crop_intervals <- c(lubridate::interval(lubridate::ymd_h("2020-11-01 0"), lubridate::ymd_hm("2020-11-01 0:30")),
+                        lubridate::interval(lubridate::ymd_h("2020-11-01 12"), lubridate::ymd_hm("2020-11-01 12:15")))
+    table <- .data_get_dataview_table(data, selection_table, crop_intervals)
+    expect_equal(table$datetime,
+                 c("2020-11-01 00:00:00",
+                   "2020-11-01 00:15:00",
+                   "2020-11-01 00:30:00",
+                   "2020-11-01 12:00:00",
+                   "2020-11-01 12:15:00"))
 })
 
 test_that(".data_get_dataview_table name colision", {
@@ -70,7 +79,7 @@ test_that(".data_get_dataview_table name colision", {
     selection_table <- tibble::tibble(locality_id = c("91184101", "91184101"),
                                       logger_index = c(2, 3),
                                       sensor_name = c("Thermo_T", "Thermo_T"))
-    crop_range <- c(lubridate::ymd_hm("2020-10-28 8:45"), lubridate::ymd_hm("2020-10-28 11:15"))
+    crop_range <- lubridate::interval(lubridate::ymd_hm("2020-10-28 8:45"), lubridate::ymd_hm("2020-10-28 11:15"))
     table <- .data_get_dataview_table(data, selection_table, crop_range)
     expect_equal(colnames(table), c("datetime", "91184101_2_91184101_Thermo_T", "91184101_3_91184101_Thermo_T"))
 })

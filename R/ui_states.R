@@ -29,8 +29,16 @@
         ),
         shiny::fluidRow(
             shiny::column(
+                shiny::checkboxInput("states_show_plot_checkbox", "Show plot", value=TRUE),
+                width = 2,
+            ),
+            shiny::column(
+                shiny::checkboxInput("states_show_data_checkbox", "Show data", value=FALSE),
+                width = 2,
+            ),
+            shiny::column(
                 shiny::checkboxInput("states_use_plotly_checkbox", "Use plotly", value=FALSE),
-                width = 12,
+                width = 2,
             ),
         ),
         shiny::fluidRow(
@@ -38,7 +46,11 @@
                 plotly::plotlyOutput("states_plotly", width="100%"),
                 shiny::plotOutput("states_ggplot", width="100%"),
                 width = 12
-            )
+            ),
+        ),
+        shiny::column(
+            DT::dataTableOutput("states_data_table"),
+            width = 12
         )
     )
 }
