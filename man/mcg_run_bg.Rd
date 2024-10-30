@@ -4,12 +4,16 @@
 \alias{mcg_run_bg}
 \title{Start shiny app in background}
 \usage{
-mcg_run_bg(data, port = 1151)
+mcg_run_bg(data, port = 1151, stdout = NULL, stderr = NULL)
 }
 \arguments{
 \item{data}{myClim object}
 
 \item{port}{of app (default 1151)}
+
+\item{stdout}{standard output file see \code{\link[callr:r_bg]{callr::r_bg()}} (default NULL)}
+
+\item{stderr}{standard error file see \code{\link[callr:r_bg]{callr::r_bg()}} (default NULL)}
 }
 \value{
 An r_process object see \code{\link[callr:r_bg]{callr::r_bg()}}

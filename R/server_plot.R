@@ -40,9 +40,6 @@
     })
     
     shiny::observeEvent(input$data_tree, {
-        if(!multi_select) {
-            return()
-        }
         data_tree <- input$data_tree
         slices <- shinyTree::get_selected(data_tree, format="slices")
         if(length(slices) == 0) {
@@ -73,6 +70,7 @@
     output$data_tree <- shinyTree::renderTree({.tree_get_list(shared$data)})
 
     output$plot_plotly <- plotly::renderPlotly({
+        render_plot_number()
         if(!shiny::isolate(.server_plot_is_plotly(input))) {
             return(plotly::ggplotly(ggplot2::ggplot()))
         }
@@ -317,7 +315,7 @@
         return("")
     }
     locality_id <- localities[[1]]
-    if(myClim:::.common_is_agg_format(data)) {
+    if(myClim:::.common_is_agg_format(shared$data)) {
         return(stringr::str_glue("{locality_id}"))
     }
     logger_indexes <- unique(filtered_data_table$logger_index)

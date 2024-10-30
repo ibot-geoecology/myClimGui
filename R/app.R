@@ -58,6 +58,8 @@ mcg_run <- function (data, ...) {
 #'
 #' @param data myClim object
 #' @param port of app (default 1151)
+#' @param stdout standard output file see [callr::r_bg()] (default NULL)
+#' @param stderr standard error file see [callr::r_bg()] (default NULL)
 #' @return An r_process object see [callr::r_bg()]
 #' @export
 #' @examples
@@ -66,12 +68,12 @@ mcg_run <- function (data, ...) {
 #'      # after click Return button
 #'      data <- proc$get_result()
 #' }
-mcg_run_bg <- function (data, port=1151) {
+mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
     print(stringr::str_glue("Open http://localhost:{port} in browser."))
     fun <- function(data, port) {
         myClimGui::mcg_run(data, port=port, launch.browser=FALSE)
     }
-    result <- callr::r_bg(fun, args = list(data=data, port=port))
+    result <- callr::r_bg(fun, args = list(data=data, port=port), stdout=stdout, stderr=stderr)
     return(result)
 }
 
