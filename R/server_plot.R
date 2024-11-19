@@ -318,9 +318,9 @@
     if(myClim:::.common_is_agg_format(shared$data)) {
         return(stringr::str_glue("{locality_id}"))
     }
-    logger_indexes <- unique(filtered_data_table$logger_index)
+    logger_names <- unique(filtered_data_table$logger_name)
     locality_item <- shared$data$localities[[locality_id]]
-    serial_numbers <- unique(purrr::map_chr(logger_indexes, ~ locality_item$loggers[[.x]]$metadata@serial_number))
+    serial_numbers <- unique(purrr::map_chr(logger_names, ~ locality_item$loggers[[.x]]$metadata@serial_number))
     serial_numbers <- serial_numbers[!is.na(serial_numbers)]
     if(length(serial_numbers) != 1){
         return(stringr::str_glue("{locality_id}"))

@@ -1,7 +1,7 @@
 .plot_const_NEIGHBORHOOD_LENGTH <- 13
 
 .plot_states <- function(shared, states_table) {
-    groupped_table <- dplyr::group_by(states_table, .data$locality_id, .data$logger_index, .data$sensor_name)
+    groupped_table <- dplyr::group_by(states_table, .data$locality_id, .data$logger_name, .data$sensor_name)
     filter_data <- myClim::mc_filter(shared$data, localities = unique(states_table$locality_id))
     range <- .plot_states_get_range(filter_data, groupped_table)
     data_table <- .plot_states_get_data(filter_data, groupped_table, range)
@@ -29,8 +29,8 @@
     group_function <- function(group_table, .y) {
         if(!is_agg && is_cleaned) {
             locality_id <- .y$locality_id[[1]]
-            logger_index <- .y$logger_index[[1]]
-            step <- data$localities[[locality_id]]$loggers[[logger_index]]$clean_info@step
+            logger_name <- .y$logger_name[[1]]
+            step <- data$localities[[locality_id]]$loggers[[logger_name]]$clean_info@step
         }
         if(is_cleaned) {
             time_diff <- lubridate::seconds(.plot_const_NEIGHBORHOOD_LENGTH * step)
@@ -60,10 +60,10 @@
             datetime <- locality$datetime
             values <- locality$sensors[[sensor_name]]$values
         } else {
-            logger_index <- .y$logger_index[[1]]
-            series_name <- stringr::str_glue("{locality_id}[{logger_index}]: {sensor_name}")
-            datetime <- locality$loggers[[logger_index]]$datetime
-            values <- locality$loggers[[logger_index]]$sensors[[sensor_name]]$values
+            logger_name <- .y$logger_name[[1]]
+            series_name <- stringr::str_glue("{locality_id} {logger_name}: {sensor_name}")
+            datetime <- locality$loggers[[logger_name]]$datetime
+            values <- locality$loggers[[logger_name]]$sensors[[sensor_name]]$values
         }
         result <- tibble::tibble(datetime=datetime,
                                  name=series_name,

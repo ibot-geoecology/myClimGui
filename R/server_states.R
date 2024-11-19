@@ -187,7 +187,7 @@
         filter_data <- myClim::mc_filter(shared$data, localities = unique(selection_table$locality_id))
         result <- myClim::mc_info_states(filter_data)
         selection_table$selected <- TRUE
-        result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_index", "sensor_name"))
+        result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_name", "sensor_name"))
         result <- dplyr::filter(result, !is.na(.data$selected))
         result <- dplyr::select(result, -"selected")
     } else {
@@ -204,7 +204,7 @@
 
 .server_states_get_table_for_edit_range <- function(shared, states_table, selected_rows) {
     states_table <- states_table[selected_rows, ]
-    selection_table <- dplyr::select(states_table, "locality_id", "logger_index", "sensor_name")
+    selection_table <- dplyr::select(states_table, "locality_id", "logger_name", "sensor_name")
     selection_table <- dplyr::distinct(selection_table)
     crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
     result <- .data_get_dataview_table(shared$data, selection_table, crop_interval)
@@ -316,7 +316,7 @@
 }
 
 .server_states_get_data_table_for_dt <- function(shared, states_table){
-    selection_table <- dplyr::select(states_table, "locality_id", "logger_index", "sensor_name")
+    selection_table <- dplyr::select(states_table, "locality_id", "logger_name", "sensor_name")
     selection_table <- dplyr::distinct(selection_table)
     intervals <- lubridate::interval(states_table$start, states_table$end)
     data_df <- .data_get_dataview_table(shared$data, selection_table, intervals)

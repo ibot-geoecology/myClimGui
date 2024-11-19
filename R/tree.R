@@ -12,7 +12,7 @@
             return(result)
         }
         result <- purrr::map(locality$loggers, logger_function)
-        names(result) <- purrr::imap(locality$loggers, ~ if(is.na(.x$metadata@serial_number)) stringr::str_glue("[{.y}]") else stringr::str_glue("[{.y}] {.x$metadata@serial_number}"))
+        names(result) <- purrr::imap(locality$loggers, ~ if(is.na(.x$metadata@serial_number)) stringr::str_glue("{.y}") else stringr::str_glue("{.y}({.x$metadata@serial_number})"))
         return(result)
     }
 
@@ -38,11 +38,11 @@
         locality_id <- names(item)[[1]]
         second_name <- names(item[[1]])[[1]]
         if(is_agg) {
-            return(list(locality_id=locality_id, logger_index=NA, sensor_name=second_name))
+            return(list(locality_id=locality_id, logger_name=NA, sensor_name=second_name))
         }
-        logger_index <- as.double(stringr::str_extract(second_name, "\\[(\\d+)\\].*", group=1))
+        logger_name <- stringr::str_extract(second_name, "(.+_\\d+)(\\(\\d+\\))?", group=1)
         sensor_name <- names(item[[1]][[1]])[[1]]
-        return(list(locality_id=locality_id, logger_index=logger_index, sensor_name=sensor_name))
+        return(list(locality_id=locality_id, logger_name=logger_name, sensor_name=sensor_name))
     }
     
     result <- purrr::map_dfr(selected, row_function)

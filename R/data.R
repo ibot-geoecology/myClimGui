@@ -36,11 +36,7 @@
 }
 
 .data_get_filtered_data_table <- function(selection_table) {
-    if("logger_index" %in% colnames(selection_table)) {
-        result <- dplyr::select(selection_table, "locality_id", "logger_index")
-    } else {
-        result <- dplyr::select(selection_table, "locality_id")
-    }
+    result <- dplyr::select(selection_table, "locality_id", "logger_name")
     return(dplyr::distinct(result))
 }
 
@@ -71,9 +67,10 @@
     
     result <- data
 
-    logger_function <- function(param_locality_id, param_logger_index) {
-        logger_table <- dplyr::filter(selection_table, (.data$locality_id == param_locality_id) & (.data$logger_index == param_logger_index))
-        logger <- data$localities[[param_locality_id]]$loggers[[param_logger_index]]
+    logger_function <- function(param_locality_id, param_logger_name) {
+        logger_table <- dplyr::filter(selection_table, (.data$locality_id == param_locality_id) &
+                                                       (.data$logger_name == param_logger_name))
+        logger <- data$localities[[param_locality_id]]$loggers[[param_logger_name]]
         logger$sensors <- logger$sensors[logger_table$sensor_name]
         return(logger)
     }
@@ -85,7 +82,7 @@
             locality$sensors <- locality$sensors[locality_table$sensor_name]
             return(locality)
         }
-        locality$loggers <- purrr::map2(param_locality_id, unique(locality_table$logger_index), logger_function)
+        locality$loggers <- purrr::map2(param_locality_id, unique(locality_table$logger_name), logger_function)
         return(locality)
     }
 
@@ -102,22 +99,22 @@
     if(is_agg) {
         sensors <- names(data$localities[[locality]]$sensors)
         return(data.frame(locality_id=locality,
-                          logger_index=NA,
+                          logger_name=NA_character_,
                           sensor_name=sensors))
     }
     
-    logger_function <- function(locality_id, index) {
-        logger <- data$localities[[locality_id]]$loggers[[index]]
+    logger_function <- function(locality_id, logger_name) {
+        logger <- data$localities[[locality_id]]$loggers[[logger_name]]
         return(
              list(locality_id=locality_id,
-                  logger_index=index,
+                  logger_name=logger_name,
                   sensor_name=names(logger$sensors)))
     }
 
     filtered_data <- myClim::mc_filter(data, localities=locality)
     loggers_table <- myClim::mc_info_logger(filtered_data)
     loggers_table <- dplyr::filter(loggers_table, .data$logger_type == logger_type_value)
-    loggers_table <- dplyr::select(loggers_table, "locality_id", "index")
+    loggers_table <- dplyr::select(loggers_table, "locality_id", "logger_name")
 
     result <- purrr::pmap_dfr(loggers_table, logger_function)
     return(result)
@@ -140,11 +137,11 @@
                        int=int)
     }
 
-    logger_function <- function(locality_id, logger_index) {
-        int <- lubridate::interval(start=min(data$localities[[locality_id]]$loggers[[logger_index]]$datetime),
-                                   end=max(data$localities[[locality_id]]$loggers[[logger_index]]$datetime))
+    logger_function <- function(locality_id, logger_name) {
+        int <- lubridate::interval(start=min(data$localities[[locality_id]]$loggers[[logger_name]]$datetime),
+                                   end=max(data$localities[[locality_id]]$loggers[[logger_name]]$datetime))
         result <- list(locality_id=locality_id,
-                       logger_index=logger_index,
+                       logger_name=logger_name,
                        int=int)
     }
     
@@ -153,9 +150,9 @@
         ranges_table <- purrr::map_dfr(localities, agg_locality_function)
         by <- "locality_id"
     } else {
-        logger_table <- dplyr::distinct(dplyr::select(selection_table, "locality_id", "logger_index"))
-        ranges_table <- purrr::map2_dfr(logger_table$locality_id, logger_table$logger_index,logger_function)
-        by <- c("locality_id", "logger_index")
+        logger_table <- dplyr::distinct(dplyr::select(selection_table, "locality_id", "logger_name"))
+        ranges_table <- purrr::map2_dfr(logger_table$locality_id, logger_table$logger_name,logger_function)
+        by <- c("locality_id", "logger_name")
     }
 
     result <- dplyr::left_join(selection_table, ranges_table, by=by)
@@ -177,7 +174,7 @@
         }
     }
     if(is.null(sensors_item)) {
-        result <- myClim::mc_reshape_wide(crop_data)
+        result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
         result <- .data_rename_dataview_columns(data, selection_table, result)
     } else {
         result <- data.frame(datetime=sensors_item$datetime)
@@ -210,7 +207,7 @@
     }
 
     group_function <- function(group_table, .y) {
-        indexes <- sort(unique(group_table$logger_index))
+        indexes <- sort(unique(group_table$logger_name))
         wrong_indexes <- seq_along(indexes)
         old_column_preffix <- as.character(stringr::str_glue("{.y$locality_id[[1]]}_{wrong_indexes}_"))
         new_column_preffix <- stringr::str_glue("{.y$locality_id[[1]]}_{indexes}_")

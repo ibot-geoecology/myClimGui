@@ -6,16 +6,11 @@ test_that(".data_get_sensors", {
 
 test_that(".data_get_filtered_data_table", {
     selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
-                                      logger_index = c(2, 2, 2),
+                                      logger_name = c("Dendro_1", "HOBO_U23-001A_1", "HOBO_U23-001A_1"),
                                       sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
     table <- .data_get_filtered_data_table(selection_table)
     expect_equal(nrow(table), 2)
-    expect_equal(colnames(table), c("locality_id", "logger_index"))
-    selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
-                                      sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
-    table <- .data_get_filtered_data_table(selection_table)
-    expect_equal(nrow(table), 2)
-    expect_equal(colnames(table), c("locality_id"))
+    expect_equal(colnames(table), c("locality_id", "logger_name"))
 })
 
 test_that(".data_get_date_range", {
@@ -32,7 +27,7 @@ test_that(".data_get_date_range", {
 test_that(".data_filter_by_selection_table", {
     selected_raw <- readRDS("../data/tree/selected_raw.rds")
     selection_table <- .tree_get_selection_table(myClim::mc_data_example_raw, selected_raw)
-    expect_equal(colnames(selection_table), c("locality_id", "logger_index", "sensor_name"))
+    expect_equal(colnames(selection_table), c("locality_id", "logger_name", "sensor_name"))
     filtered_raw_data <- .data_filter_by_selection_table(myClim::mc_data_example_raw, selection_table)
     expect_equal(length(filtered_raw_data$localities), 2)
     expect_equal(length(filtered_raw_data$localities$A1E05$loggers), 2)
@@ -50,19 +45,19 @@ test_that(".data_filter_by_selection_table", {
 
 test_that(".data_get_selection_table", {
     selection_table <- .data_get_selection_table(myClim::mc_data_example_clean, "A1E05", "Dendro")
-    expect_equal(colnames(selection_table), c("locality_id", "logger_index", "sensor_name"))
+    expect_equal(colnames(selection_table), c("locality_id", "logger_name", "sensor_name"))
     expect_equal(nrow(selection_table), 2)
-    expect_equal(selection_table$logger_index, c(2, 2))
+    expect_equal(selection_table$logger_name, c("Dendro_1", "Dendro_1"))
 })
 
 test_that(".data_get_dataview_table", {
     data <- myClim::mc_data_example_clean
     selection_table <- tibble::tibble(locality_id = c("A1E05", "A2E32", "A2E32"),
-                                      logger_index = c(2, 2, 2),
+                                      logger_name = c("Dendro_1", "HOBO_U23-001A_1", "HOBO_U23-001A_1"),
                                       sensor_name = c("Dendro_T", "HOBO_T", "HOBO_RH"))
     crop_intervals <- lubridate::interval(lubridate::ymd_h("2020-11-01 0"), lubridate::ymd_h("2020-12-01 0"))
     table <- .data_get_dataview_table(data, selection_table, crop_intervals)
-    expect_equal(colnames(table), c("datetime", "A1E05_2_92201058_Dendro_T", "A2E32_2_20024338_HOBO_T", "A2E32_2_20024338_HOBO_RH"))
+    expect_equal(colnames(table), c("datetime", "A1E05_Dendro_1_Dendro_T", "A2E32_HOBO_U23-001A_1_HOBO_T", "A2E32_HOBO_U23-001A_1_HOBO_RH"))
     crop_intervals <- c(lubridate::interval(lubridate::ymd_h("2020-11-01 0"), lubridate::ymd_hm("2020-11-01 0:30")),
                         lubridate::interval(lubridate::ymd_h("2020-11-01 12"), lubridate::ymd_hm("2020-11-01 12:15")))
     table <- .data_get_dataview_table(data, selection_table, crop_intervals)
@@ -77,9 +72,9 @@ test_that(".data_get_dataview_table", {
 test_that(".data_get_dataview_table name colision", {
     data <- myClim::mc_read_files("../data/dataview_table", "TOMST", silent = TRUE)
     selection_table <- tibble::tibble(locality_id = c("91184101", "91184101"),
-                                      logger_index = c(2, 3),
+                                      logger_name = c("Thermo_2", "Thermo_3"),
                                       sensor_name = c("Thermo_T", "Thermo_T"))
     crop_range <- lubridate::interval(lubridate::ymd_hm("2020-10-28 8:45"), lubridate::ymd_hm("2020-10-28 11:15"))
     table <- .data_get_dataview_table(data, selection_table, crop_range)
-    expect_equal(colnames(table), c("datetime", "91184101_2_91184101_Thermo_T", "91184101_3_91184101_Thermo_T"))
+    expect_equal(colnames(table), c("datetime", "91184101_Thermo_2_Thermo_T", "91184101_Thermo_3_Thermo_T"))
 })
