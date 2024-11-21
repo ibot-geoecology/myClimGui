@@ -167,7 +167,7 @@
     states_table$end <- format(states_table$end, "%Y-%m-%d %H:%M:%S")
     result <-DT::datatable(states_table,
                            options = list(pageLength = 100),
-                           editable = list(target = "cell", disable = list(columns = seq(7)[-5])))
+                           editable = list(target = "cell", disable = list(columns = c(1, 2, 3, 5, 6))))
     return(result)
 }
 

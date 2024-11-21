@@ -322,10 +322,16 @@
     locality_item <- shared$data$localities[[locality_id]]
     serial_numbers <- unique(purrr::map_chr(logger_names, ~ locality_item$loggers[[.x]]$metadata@serial_number))
     serial_numbers <- serial_numbers[!is.na(serial_numbers)]
-    if(length(serial_numbers) != 1){
-        return(stringr::str_glue("{locality_id}"))
+    if(length(logger_names) == 1 && length(serial_numbers) == 1){
+        return(stringr::str_glue("{locality_id} {logger_names}({serial_numbers})"))
     }
-    return(stringr::str_glue("{locality_id} - {serial_numbers}"))
+    else if(length(logger_names) == 1){
+        return(stringr::str_glue("{locality_id} {logger_names}"))
+    }
+    else if(length(serial_numbers) == 1){
+        return(stringr::str_glue("{locality_id} {serial_numbers}"))
+    }
+    return(stringr::str_glue("{locality_id}"))
 }
 
 .server_plot_is_plotly <- function(input) {

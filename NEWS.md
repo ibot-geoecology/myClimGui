@@ -1,3 +1,7 @@
+# myClimGui 1.0.6
+* Logger name is used instead of logger index (myClim version 1.3.4 or higher is required).
+* Selected logger label in the header is changed.
+
 # myClimGui 1.0.5
 * Improved performance of state loading.
 * Added data table to the states tab.
