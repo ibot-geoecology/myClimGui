@@ -4,7 +4,7 @@
         shiny::fluidRow(
             shiny::column(
                 shiny::checkboxInput("filter_by_plot_checkbox", "Filter by plot", value=TRUE),
-                width = 12,
+                width = 2,
             ),
         ),
         shiny::fluidRow(

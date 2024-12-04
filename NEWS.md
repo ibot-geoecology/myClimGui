@@ -1,3 +1,6 @@
+# myClimGui 1.0.7
+* For selection of states, can be used Up/Down arrow, Ctrl and Shift keys.
+
 # myClimGui 1.0.6
 * Logger name is used instead of logger index (myClim version 1.3.4 or higher is required).
 * Selected logger label in the header is changed.

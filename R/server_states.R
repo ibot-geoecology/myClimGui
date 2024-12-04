@@ -5,9 +5,10 @@
     edit_range_table_value <- shiny::reactiveVal()
     selected_range <- shiny::reactiveVal()
     form_mode <- shiny::reactiveVal()
+    action_selected_rows <- shiny::reactiveVal()
         
     shiny::observeEvent(input$states_table_cell_edit, {
-        shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value())
+        shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value()$table)
         .server_states_reload_data_after_edit(input, session, shared, states_table_value)
     })
     
@@ -17,6 +18,7 @@
             shiny::showNotification(.texts_states_not_selected_states_notification)
             return(NULL)
         }
+        action_selected_rows(selected_rows)
         form_mode("edit")
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
         edit_range_table_value(.server_states_get_table_for_edit_range(shared, df_states, selected_rows))
@@ -38,6 +40,7 @@
             shiny::showNotification(.texts_states_not_selected_states_notification)
             return(NULL)
         }
+        action_selected_rows(selected_rows)
         question <- stringr::str_glue(.texts_states_delete_states_question)
         shiny::showModal(shiny::modalDialog(title=question,
                                         footer= shiny::tagList(
@@ -47,9 +50,9 @@
     })
    
     shiny::observeEvent(input$confirm_delete_states_button, {
-        selected_rows <- input$states_table_rows_selected
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
-        delete_table <- df_states[selected_rows, ]
+        delete_table <- df_states[action_selected_rows(), ]
+        action_selected_rows(NULL)
         shared$data <- .data_delete_states(shared$data, delete_table)
         .server_states_reload_data_after_edit(input, session, shared, states_table_value)
         shiny::removeModal()
@@ -69,7 +72,8 @@
             }
             shared$data <- .server_states_add_states(shared, selected_datetimes, input$new_tag, input$new_value)
         } else if(form_mode() == "edit") {
-            changed_table <- states_table_value()[input$states_table_rows_selected, ]
+            changed_table <- states_table_value()$table[action_selected_rows(), ]
+            action_selected_rows(NULL)
             shared$data <- .server_states_edit_range(shared$data, changed_table, selected_datetimes)
         }
         
@@ -96,12 +100,12 @@
     })
 
     output$states_table <- DT::renderDataTable({
-        if(is.null(states_table_value())) {
+        if(is.null(states_table_value()) || is.null(states_table_value()$table)) {
             return(NULL)
         }
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
-        return(.server_states_get_table_for_dt(df_states))
-    })
+        return(.server_states_get_table_for_dt(df_states, states_table_value()$selected_rows))
+    }, server = FALSE)
     
     output$states_plotly <- plotly::renderPlotly({
         if(!input$states_show_plot_checkbox || !input$states_use_plotly_checkbox) {
@@ -162,11 +166,14 @@
 
 }
 
-.server_states_get_table_for_dt <- function(states_table){
+.server_states_get_table_for_dt <- function(states_table, selected_rows) {
     states_table$start <- format(states_table$start, "%Y-%m-%d %H:%M:%S")
     states_table$end <- format(states_table$end, "%Y-%m-%d %H:%M:%S")
     result <-DT::datatable(states_table,
-                           options = list(pageLength = 100),
+                           selection = "none", #list(target="row", selected=selected_rows),
+                           options = list(pageLength = 10,
+                                          select = list(style = "os", items = "row")),
+                           extensions = c('Select'),
                            editable = list(target = "cell", disable = list(columns = c(1, 2, 3, 5, 6))))
     return(result)
 }
@@ -199,7 +206,7 @@
         selected_tag <- "all"
     }
     shiny::updateSelectInput(session, "tag_select", choices = tags, selected = selected_tag)
-    states_table_value(result)
+    states_table_value(list(table=result, selected_rows=NULL))
 }
 
 .server_states_get_table_for_edit_range <- function(shared, states_table, selected_rows) {
@@ -308,7 +315,7 @@
 }
 
 .server_states_get_filtered_dataframe <- function(states_table_value, selected_tag) {
-    result <- states_table_value()
+    result <- states_table_value()$table
     if(selected_tag != "all") {
         result <- dplyr::filter(result, .data$tag == selected_tag)
     }

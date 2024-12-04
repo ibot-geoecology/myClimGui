@@ -101,7 +101,7 @@ mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
         shiny::observeEvent(input$return_button, {
             shiny::stopApp(shared$data)
         })
-    
+
         .server_plot_get_main(input, output, session, shared)
         .server_states_get_main(input, output, session, shared, states_table_value)
         .server_data_get_main(input, output, session, shared, data_table_value)
