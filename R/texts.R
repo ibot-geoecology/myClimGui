@@ -17,5 +17,4 @@
 .texts_states_not_correct_range_notification <- "The date range isn't selected correctly!"
 .texts_states_not_selected_states_notification <- "There isn't selected any state!"
 .texts_states_not_selected_range <- "There isn't selected date range!"
-.texts_states_selected_too_many_rows <- "Too many rows are selected!"
 

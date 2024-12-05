@@ -6,6 +6,7 @@
     selected_range <- shiny::reactiveVal()
     form_mode <- shiny::reactiveVal()
     action_selected_rows <- shiny::reactiveVal()
+    selected_range_value <- shiny::reactiveVal()
         
     shiny::observeEvent(input$states_table_cell_edit, {
         shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value()$table)
@@ -30,6 +31,7 @@
         crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
         table_data <- .data_get_dataview_table(shared$data, shared$selection_table, crop_interval)
         edit_range_table_value(table_data)
+        action_selected_rows(NULL)
         .server_states_open_form_dialog(TRUE)
     })
    
@@ -59,7 +61,7 @@
     })
    
     shiny::observeEvent(input$confirm_state_form_button, {
-        selected_datetimes <- .server_states_get_selected_datetimes(input, edit_range_table_value)
+        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()]
         if(length(selected_datetimes) == 0 || length(selected_datetimes) > 2) {
             shiny::showNotification(.texts_states_not_correct_range_notification)
             return()
@@ -97,6 +99,13 @@
             return()
         }
         .server_states_reload_table(input, session, shared, states_table_value)
+    })
+
+    shiny::observeEvent(input$edit_range_table_rows_selected, {
+        selected_rows <- input$edit_range_table_rows_selected
+        previous_range <- selected_range_value()
+        output_range <- .server_states_get_output_selected_range(selected_rows, previous_range)
+        .server_states_change_range_selection(previous_range, output_range, selected_range_value)
     })
 
     output$states_table <- DT::renderDataTable({
@@ -143,7 +152,16 @@
         if(is.null(edit_range_table_value())) {
             return(NULL)
         }
+        selected_range_value(NULL)
+        selection <- list(mode="multiple", target="row", selected=NULL)
+        if(!is.null(action_selected_rows())){
+            edit_states_table <- states_table_value()$table[action_selected_rows(), ]
+            selection$selected <- .server_states_get_range_table_selection(edit_range_table_value(), edit_states_table,
+                                                                            selected_range_value)
+            selected_range_value(c(min(selection$selected), max(selection$selected)))
+        }
         result <-DT::datatable(edit_range_table_value(),
+                               selection = selection,
                                options = list(pageLength = .server_states_const_RANGE_PAGE_LENGTH,
                                               lengthMenu = .server_states_const_RANGE_LENGTH_MENU,
                                               scrollX = TRUE))
@@ -151,17 +169,14 @@
     })
     
     output$selected_range_text <- shiny::renderText({
-        selected_datetimes <- .server_states_get_selected_datetimes(input, edit_range_table_value)
-        if(length(selected_datetimes) == 0) {
+        if(is.null(selected_range_value())) {
             return(.texts_states_not_selected_range)
         }
-        if(length(selected_datetimes) == 1) {
-            return(paste0(.texts_selected_semicolon, selected_datetimes))
+        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()]
+        if(selected_datetimes[[1]] == selected_datetimes[[2]]) {
+            return(paste0(.texts_selected_semicolon, selected_datetimes[[1]]))
         }
-        if(length(selected_datetimes) == 2) {
-            return(stringr::str_glue("{.texts_selected_semicolon}{selected_datetimes[[1]]} - {selected_datetimes[[2]]}"))
-        }
-        return(.texts_states_selected_too_many_rows)
+        return(stringr::str_glue("{.texts_selected_semicolon}{selected_datetimes[[1]]} - {selected_datetimes[[2]]}"))
     })
 
 }
@@ -216,13 +231,6 @@
     crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
     result <- .data_get_dataview_table(shared$data, selection_table, crop_interval)
     return(result)
-}
-
-.server_states_get_selected_datetimes <- function(input, edit_range_table_value) {
-    selected_rows <- input$edit_range_table_rows_selected
-    result <- edit_range_table_value()[selected_rows, ]
-    result <- dplyr::arrange(result, "datetime")
-    return(result$datetime)
 }
 
 .server_states_open_form_dialog <- function(is_new_state) {
@@ -331,4 +339,55 @@
     result <-DT::datatable(data_df,
                            options = list(pageLength = 1000))
     return(result)
+}
+
+.server_states_get_range_table_selection <- function(range_table, edit_states_table, selected_range_value) {
+    start <- min(edit_states_table$start) |>
+        format("%Y-%m-%d %H:%M:%S") 
+    end <- max(edit_states_table$end) |>
+        format("%Y-%m-%d %H:%M:%S")
+    condition <- (range_table$datetime >= start) & (range_table$datetime <= end)
+    indexes <- which(condition)
+    return(indexes)
+}
+
+.server_states_get_output_selected_range <- function(selected_rows, previous_range) {
+    if(length(selected_rows) == 0) {
+        return(NULL)
+    }
+    if(is.null(previous_range) || min(selected_rows) < previous_range[[1]] || max(selected_rows) > previous_range[[2]]) {
+        return(c(min(selected_rows), max(selected_rows)))
+    }
+    selected_table <- tibble::tibble(row_id=selected_rows, selected=TRUE)
+    table <- tibble::tibble(row_id=previous_range[[1]]:previous_range[[2]])
+    table <- dplyr::left_join(table, selected_table, by=c("row_id"="row_id"))
+    table$selected[is.na(table$selected)] <- FALSE
+    new_selected_rows <- table$row_id[!table$selected]
+    if(length(new_selected_rows) == 0) {
+        return(previous_range)
+    }
+    new_selected_row <- min(new_selected_rows)
+    start_diff <- new_selected_row - previous_range[[1]]
+    end_diff <- previous_range[[2]] - new_selected_row
+    if(start_diff < end_diff) {
+        return(c(new_selected_row, previous_range[[2]]))
+    }
+    return(c(previous_range[[1]], new_selected_row))
+}
+
+.server_states_change_range_selection <- function(previous_range, output_range, selected_range_value) {
+    if(is.null(previous_range) && is.null(output_range)) {
+        return()
+    }
+    if(!is.null(previous_range) && !is.null(output_range) && all(previous_range == output_range)) {
+        return()
+    }
+    new_selected_rows <- NULL
+    if(!is.null(output_range)) {
+        new_selected_rows <- output_range[[1]]:output_range[[2]]
+    }
+    shiny::isolate({
+        DT::selectRows(DT::dataTableProxy("edit_range_table"), new_selected_rows)
+    })
+    selected_range_value(output_range)
 }
