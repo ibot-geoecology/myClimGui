@@ -40,7 +40,10 @@
         if(is_agg) {
             return(list(locality_id=locality_id, logger_name=NA, sensor_name=second_name))
         }
-        logger_name <- stringr::str_extract(second_name, "(.+_\\d+)(\\(\\d+\\))?", group=1)
+        logger_name <- stringr::str_extract(second_name, "(.+_\\d+)\\(.*\\)$", group=1)
+        if(is.na(logger_name)) {
+            logger_name <- second_name
+        }
         sensor_name <- names(item[[1]][[1]])[[1]]
         return(list(locality_id=locality_id, logger_name=logger_name, sensor_name=sensor_name))
     }

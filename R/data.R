@@ -53,13 +53,35 @@
 }
 
 .data_delete_states <- function(data, delete_table) {
-    delete_table$delete <- TRUE
-    states_table <- myClim::mc_info_states(data)
-    columns <- colnames(states_table)
-    states_table <- dplyr::left_join(states_table, delete_table, by=columns)
-    states_table$delete[is.na(states_table$delete)] <- FALSE
-    states_table <- dplyr::filter(states_table, !.data$delete)
-    return(myClim::mc_states_update(data, dplyr::select(states_table, columns)))
+    is_agg <- myClim:::.common_is_agg_format(data)
+
+    result_env <- new.env()
+    result_env$data <- data
+
+    delete_function <- function(locality_id, logger_name, sensor_name, tag,
+                                start, end, value) {
+        delete_tag <- tag
+        delete_start <- start
+        delete_end <- end
+        delete_value <- value
+        if(is_agg) {
+            states_table <- result_env$data$localities[[locality_id]]$sensors[[sensor_name]]$states
+        } else {
+            states_table <- result_env$data$localities[[locality_id]]$loggers[[logger_name]]$sensors[[sensor_name]]$states
+        }
+        states_table <- dplyr::filter(states_table, (.data$tag != delete_tag) |
+                                      (.data$start != delete_start) |
+                                      (.data$end != delete_end) |
+                                      (.data$value != delete_value))
+        if(is_agg) {
+            result_env$data$localities[[locality_id]]$sensors[[sensor_name]]$states <- states_table
+        } else {
+            result_env$data$localities[[locality_id]]$loggers[[logger_name]]$sensors[[sensor_name]]$states <- states_table
+        }
+    }
+
+    purrr::pwalk(delete_table, delete_function)
+    return(result_env$data)
 }
 
 .data_filter_by_selection_table <- function(data, selection_table) {

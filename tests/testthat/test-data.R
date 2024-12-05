@@ -78,3 +78,13 @@ test_that(".data_get_dataview_table name colision", {
     table <- .data_get_dataview_table(data, selection_table, crop_range)
     expect_equal(colnames(table), c("datetime", "91184101_Thermo_2_Thermo_T", "91184101_Thermo_3_Thermo_T"))
 })
+
+test_that(".data_delete_states", {
+    data <- myClim::mc_data_example_clean
+    old_states_table <- myClim::mc_info_states(data)
+    delete_table <- dplyr::filter(old_states_table, .data$locality_id == "A1E05")
+    data_delete <- .data_delete_states(data, delete_table = delete_table)
+    new_states_table <- myClim::mc_info_states(data_delete)
+    expect_equal(nrow(old_states_table), nrow(new_states_table) + nrow(delete_table))
+    expect_false("A1E05" %in% new_states_table$locality_id)
+})
