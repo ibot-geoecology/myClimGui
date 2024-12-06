@@ -1,4 +1,4 @@
-# myClimGui 1.0.8
+# myClimGui 1.1.0
 * Fixed issue with non-numeric `serial_number` in the data tree.
 * Improved the speed of the delete states operation.
 * Improved the range selection table.
