@@ -8,6 +8,7 @@
 .texts_selected_semicolon <- "Selected: "
 .texts_tag <- "Tag"
 .texts_value <- "Value"
+.texts_clear <- "Clear"
 
 # states
 .texts_states_delete_states_question <- "Delete {count_states} states?"

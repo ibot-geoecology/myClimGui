@@ -1,6 +1,7 @@
 # myClimGui 1.0.8
 * Fixed issue with non-numeric `serial_number` in the data tree.
 * Improved the speed of the delete states operation.
+* Improved the range selection table.
 
 # myClimGui 1.0.7
 * For selection of states, can be used Up/Down arrow, Ctrl and Shift keys.

@@ -61,7 +61,7 @@
     })
    
     shiny::observeEvent(input$confirm_state_form_button, {
-        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()]
+        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()$value]
         if(length(selected_datetimes) == 0 || length(selected_datetimes) > 2) {
             shiny::showNotification(.texts_states_not_correct_range_notification)
             return()
@@ -102,10 +102,20 @@
     })
 
     shiny::observeEvent(input$edit_range_table_rows_selected, {
-        selected_rows <- input$edit_range_table_rows_selected
-        previous_range <- selected_range_value()
-        output_range <- .server_states_get_output_selected_range(selected_rows, previous_range)
+        if(selected_range_value()$is_init)
+        {
+            previous_range <- c(0, 0)
+            output_range <- selected_range_value()$value
+        } else {
+            selected_rows <- input$edit_range_table_rows_selected
+            previous_range <- selected_range_value()$value
+            output_range <- .server_states_get_output_selected_range(selected_rows, previous_range)
+        }
         .server_states_change_range_selection(previous_range, output_range, selected_range_value)
+    })
+
+    shiny::observeEvent(input$clear_range_state_form_button, {
+        .server_states_clean_range_selection(selected_range_value)
     })
 
     output$states_table <- DT::renderDataTable({
@@ -152,14 +162,15 @@
         if(is.null(edit_range_table_value())) {
             return(NULL)
         }
-        selected_range_value(NULL)
         selection <- list(mode="multiple", target="row", selected=NULL)
+        selection_range <- NULL
         if(!is.null(action_selected_rows())){
             edit_states_table <- states_table_value()$table[action_selected_rows(), ]
             selection$selected <- .server_states_get_range_table_selection(edit_range_table_value(), edit_states_table,
                                                                             selected_range_value)
-            selected_range_value(c(min(selection$selected), max(selection$selected)))
+            selection_range <- c(min(selection$selected), max(selection$selected))
         }
+        selected_range_value(list(is_init=TRUE, value=selection_range))
         result <-DT::datatable(edit_range_table_value(),
                                selection = selection,
                                options = list(pageLength = .server_states_const_RANGE_PAGE_LENGTH,
@@ -169,10 +180,10 @@
     })
     
     output$selected_range_text <- shiny::renderText({
-        if(is.null(selected_range_value())) {
+        if(is.null(selected_range_value()$value)) {
             return(.texts_states_not_selected_range)
         }
-        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()]
+        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()$value]
         if(selected_datetimes[[1]] == selected_datetimes[[2]]) {
             return(paste0(.texts_selected_semicolon, selected_datetimes[[1]]))
         }
@@ -255,9 +266,11 @@
                                         message_text,
                                         new_tag_input,
                                         new_value_input,
+                                        shiny::actionButton("clear_range_state_form_button", .texts_clear, icon=shiny::icon("trash-can")),
                                         shiny::tagAppendAttributes(
-                                            shiny::textOutput("selected_range_text"),
+                                            shiny::textOutput("selected_range_text", inline = TRUE),
                                             style="font-weight: bold; "),
+                                        shiny::br(),
                                         shiny::br(),
                                         DT::dataTableOutput("edit_range_table")))
 }
@@ -389,5 +402,10 @@
     shiny::isolate({
         DT::selectRows(DT::dataTableProxy("edit_range_table"), new_selected_rows)
     })
-    selected_range_value(output_range)
+    selected_range_value(list(is_init=FALSE, value=output_range))
+}
+
+.server_states_clean_range_selection <- function(selected_range_value) {
+    DT::selectRows(DT::dataTableProxy("edit_range_table"), NULL)
+    selected_range_value(list(is_init=FALSE, value=NULL))
 }
