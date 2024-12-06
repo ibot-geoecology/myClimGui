@@ -167,7 +167,9 @@
         if(is.null(edit_range_table_value())) {
             return(NULL)
         }
-        range <- selected_range_value()$value
+        shiny::isolate({
+            range <- selected_range_value()$value
+        })
         if(!is.null(range)) {
             selected <- range[[1]]:range[[2]]
         } else {
