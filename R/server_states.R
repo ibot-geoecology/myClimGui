@@ -6,7 +6,7 @@
     selected_range <- shiny::reactiveVal()
     form_mode <- shiny::reactiveVal()
     action_selected_rows <- shiny::reactiveVal()
-    selected_range_value <- shiny::reactiveVal()
+    selected_range_value <- shiny::reactiveVal(list(is_init=TRUE, value=NULL))
         
     shiny::observeEvent(input$states_table_cell_edit, {
         shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value()$table)
@@ -23,6 +23,10 @@
         form_mode("edit")
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
         edit_range_table_value(.server_states_get_table_for_edit_range(shared, df_states, selected_rows))
+        edit_states_table <- df_states[action_selected_rows(), ]
+        selection_range <- .server_states_get_range_table_selection(edit_range_table_value(), edit_states_table,
+                                                                    selected_range_value)
+        selected_range_value(list(is_init=TRUE, value=selection_range))
         .server_states_open_form_dialog(FALSE)
     })
    
@@ -32,6 +36,7 @@
         table_data <- .data_get_dataview_table(shared$data, shared$selection_table, crop_interval)
         edit_range_table_value(table_data)
         action_selected_rows(NULL)
+        selected_range_value(list(is_init=TRUE, value=NULL))
         .server_states_open_form_dialog(TRUE)
     })
    
@@ -112,7 +117,7 @@
             output_range <- .server_states_get_output_selected_range(selected_rows, previous_range)
         }
         .server_states_change_range_selection(previous_range, output_range, selected_range_value)
-    })
+    }, ignoreNULL=FALSE)
 
     shiny::observeEvent(input$clear_range_state_form_button, {
         .server_states_clean_range_selection(selected_range_value)
@@ -162,17 +167,14 @@
         if(is.null(edit_range_table_value())) {
             return(NULL)
         }
-        selection <- list(mode="multiple", target="row", selected=NULL)
-        selection_range <- NULL
-        if(!is.null(action_selected_rows())){
-            edit_states_table <- states_table_value()$table[action_selected_rows(), ]
-            selection$selected <- .server_states_get_range_table_selection(edit_range_table_value(), edit_states_table,
-                                                                            selected_range_value)
-            selection_range <- c(min(selection$selected), max(selection$selected))
+        range <- selected_range_value()$value
+        if(!is.null(range)) {
+            selected <- range[[1]]:range[[2]]
+        } else {
+            selected <- NULL
         }
-        selected_range_value(list(is_init=TRUE, value=selection_range))
         result <-DT::datatable(edit_range_table_value(),
-                               selection = selection,
+                               selection = list(target="row", selected=selected),
                                options = list(pageLength = .server_states_const_RANGE_PAGE_LENGTH,
                                               lengthMenu = .server_states_const_RANGE_LENGTH_MENU,
                                               scrollX = TRUE))
@@ -361,7 +363,7 @@
         format("%Y-%m-%d %H:%M:%S")
     condition <- (range_table$datetime >= start) & (range_table$datetime <= end)
     indexes <- which(condition)
-    return(indexes)
+    return(c(min(indexes), max(indexes)))
 }
 
 .server_states_get_output_selected_range <- function(selected_rows, previous_range) {
@@ -390,10 +392,10 @@
 
 .server_states_change_range_selection <- function(previous_range, output_range, selected_range_value) {
     if(is.null(previous_range) && is.null(output_range)) {
-        return()
+        return(previous_range)
     }
     if(!is.null(previous_range) && !is.null(output_range) && all(previous_range == output_range)) {
-        return()
+        return(previous_range)
     }
     new_selected_rows <- NULL
     if(!is.null(output_range)) {
