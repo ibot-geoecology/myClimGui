@@ -105,6 +105,7 @@
             return(locality)
         }
         locality$loggers <- purrr::map2(param_locality_id, unique(locality_table$logger_name), logger_function)
+        names(locality$loggers) <- purrr::map_chr(locality$loggers, ~ .x$metadata@name)
         return(locality)
     }
 
