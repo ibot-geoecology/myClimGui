@@ -79,7 +79,8 @@
             }
             shared$data <- .server_states_add_states(shared, selected_datetimes, input$new_tag, input$new_value)
         } else if(form_mode() == "edit") {
-            changed_table <- states_table_value()$table[action_selected_rows(), ]
+            df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
+            changed_table <- df_states[action_selected_rows(), ]
             action_selected_rows(NULL)
             shared$data <- .server_states_edit_range(shared$data, changed_table, selected_datetimes)
         }

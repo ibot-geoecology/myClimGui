@@ -1,5 +1,6 @@
 # myClimGui 1.1.1
 * The missing logger name after filtering has been fixed.
+* The change states range issue has been fixed.
 
 # myClimGui 1.1.0
 * Fixed issue with non-numeric `serial_number` in the data tree.
