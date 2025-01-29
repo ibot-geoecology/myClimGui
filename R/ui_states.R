@@ -15,7 +15,7 @@
             ),
             shiny::column(
                 shiny::actionButton("new_state_button", .texts_new),
-                shiny::actionButton("range_button", .texts_edit_range),
+                shiny::actionButton("edit_state_button", .texts_edit),
                 shiny::actionButton("delete_states_button", .texts_delete),
                 width = 6,
                 style="padding: 5px; text-align: right;",

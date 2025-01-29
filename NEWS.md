@@ -1,3 +1,6 @@
+# myClimGui 1.1.2
+* Tag and value can be edited in the edit state dialog.
+
 # myClimGui 1.1.1
 * The missing logger name after filtering has been fixed.
 * The change states range issue has been fixed.

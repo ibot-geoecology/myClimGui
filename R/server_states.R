@@ -13,7 +13,7 @@
         .server_states_reload_data_after_edit(input, session, shared, states_table_value)
     })
     
-    shiny::observeEvent(input$range_button, {
+    shiny::observeEvent(input$edit_state_button, {
         selected_rows <- input$states_table_rows_selected
         if(length(selected_rows) == 0) {
             shiny::showNotification(.texts_states_not_selected_states_notification)
@@ -27,7 +27,7 @@
         selection_range <- .server_states_get_range_table_selection(edit_range_table_value(), edit_states_table,
                                                                     selected_range_value)
         selected_range_value(list(is_init=TRUE, value=selection_range))
-        .server_states_open_form_dialog(FALSE)
+        .server_states_open_form_dialog(FALSE, edit_states_table)
     })
    
     shiny::observeEvent(input$new_state_button, {
@@ -73,16 +73,16 @@
         }
         if(form_mode() == "new")
         {
-            if(input$new_tag == "") {
+            if(input$edit_tag == "") {
                 shiny::showNotification(.texts_states_empty_tag_notification)
                 return()
             }
-            shared$data <- .server_states_add_states(shared, selected_datetimes, input$new_tag, input$new_value)
+            shared$data <- .server_states_add_states(shared, selected_datetimes, input$edit_tag, input$edit_value)
         } else if(form_mode() == "edit") {
             df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
             changed_table <- df_states[action_selected_rows(), ]
             action_selected_rows(NULL)
-            shared$data <- .server_states_edit_range(shared$data, changed_table, selected_datetimes)
+            shared$data <- .server_states_edit_form(shared$data, changed_table, selected_datetimes, input)
         }
         
         .server_states_reload_data_after_edit(input, session, shared, states_table_value)
@@ -249,18 +249,24 @@
     return(result)
 }
 
-.server_states_open_form_dialog <- function(is_new_state) {
-    new_tag_input <- NULL
-    new_value_input <- NULL
+.server_states_open_form_dialog <- function(is_new_state, edit_states_table=NULL) {
     message_text <- NULL
     button_text <- .texts_edit
-    title <- .texts_edit_range
+    title <- .texts_edit
+    tag_title <- .texts_tag
+    value_title <- .texts_value
+    placeholder <- ""
     if(is_new_state) {
-        new_tag_input <- shiny::textInput("new_tag", .texts_tag)
-        new_value_input <- shiny::textInput("new_value", .texts_value)
         message_text <- shiny::span(.texts_states_new_states_warning)
         button_text <- .texts_new
         title <- .texts_states_new_states
+    }
+    if(!is.null(edit_states_table)) {
+        edited_tags <- stringr::str_c(unique(edit_states_table$tag), collapse=", ")
+        tag_title <- stringr::str_glue("{.texts_tag} ({edited_tags})")
+        edited_values <- stringr::str_c(unique(edit_states_table$value), collapse=", ")
+        value_title <- stringr::str_glue("{.texts_value} ({edited_values})")
+        placeholder <- .texts_unchanged
     }
     shiny::showModal(shiny::modalDialog(title=title,
                                         size="l",
@@ -269,8 +275,8 @@
                                             shiny::actionButton("confirm_state_form_button", button_text)
                                         ),
                                         message_text,
-                                        new_tag_input,
-                                        new_value_input,
+                                        shiny::textInput("edit_tag", tag_title, placeholder = placeholder),
+                                        shiny::textInput("edit_value", value_title, placeholder = placeholder),
                                         shiny::actionButton("clear_range_state_form_button", .texts_clear, icon=shiny::icon("trash-can")),
                                         shiny::tagAppendAttributes(
                                             shiny::textOutput("selected_range_text", inline = TRUE),
@@ -291,13 +297,19 @@
     return(result)
 }
 
-.server_states_edit_range <- function(data, changed_table, selected_datetimes) {
+.server_states_edit_form <- function(data, changed_table, selected_datetimes, input) {
     new_values <- list()
     new_values[["start"]] <- lubridate::ymd_hms(selected_datetimes[[1]])
     if(length(selected_datetimes) == 1) {
         new_values[["end"]] <- new_values[["start"]]
     } else {
         new_values[["end"]] <- lubridate::ymd_hms(selected_datetimes[[2]])
+    }
+    if(input$edit_tag != "") {
+        new_values[["tag"]] <- input$edit_tag
+    }
+    if(input$edit_value != "") {
+        new_values[["value"]] <- input$edit_value
     }
     result <- .data_edit_states(data, changed_table, new_values)
     return(result)

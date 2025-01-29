@@ -2,13 +2,13 @@
 .texts_cancel <- "Cancel"
 .texts_edit <- "Edit"
 .texts_delete <- "Delete"
-.texts_edit_range <- "Edit range"
 .texts_new <- "New"
 .texts_select <- "Select"
 .texts_selected_semicolon <- "Selected: "
 .texts_tag <- "Tag"
 .texts_value <- "Value"
 .texts_clear <- "Clear"
+.texts_unchanged <- "Unchanged"
 
 # states
 .texts_states_delete_states_question <- "Delete {count_states} states?"
