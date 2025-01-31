@@ -10,6 +10,10 @@
 .texts_clear <- "Clear"
 .texts_unchanged <- "Unchanged"
 
+# plot
+.texts_plot_no_tag <- "No visible tag"
+.texts_plot_no_tag_value <- " "
+
 # states
 .texts_states_delete_states_question <- "Delete {count_states} states?"
 .texts_states_empty_tag_notification <- "The tag value is required!"

@@ -67,6 +67,11 @@
         })
     })
 
+    shiny::observeEvent(input$plot_tag_select, {
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, TRUE)
+    })
+
     output$data_tree <- shinyTree::renderTree({.tree_get_list(shared$data)})
 
     output$plot_plotly <- plotly::renderPlotly({
@@ -270,7 +275,8 @@
     selected_facet_text <- input$facet_select
     facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
-    plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger)
+    tag <- if(input$plot_tag_select == .texts_plot_no_tag_value) NULL else input$plot_tag_select
+    plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger, tag=tag)
     return(plot)
 }
 
@@ -338,3 +344,8 @@
     return(.server_plot_selected_settings(input, .app_const_SETTINGS_PLOTLY_KEY))
 }
 
+.server_plot_update_tags <- function(session, tags) {
+    choices <- c(.texts_plot_no_tag_value, tags)
+    names(choices) <- c(.texts_plot_no_tag, tags)
+    shiny::updateSelectInput(session, "plot_tag_select", choices=choices)
+}

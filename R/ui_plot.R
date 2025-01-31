@@ -39,7 +39,11 @@
                 shiny::selectInput("facet_select", NULL, c("NULL", "locality", "physical"), selected="physical",
                                    width="100%"),
                 width = 2),
-            shiny::column(width = 4),
+            shiny::column(
+                shiny::selectInput("plot_tag_select", NULL, NULL,
+                                   selected=.texts_plot_no_tag_value, width="100%"),
+                width = 2),
+            shiny::column(width = 2),
             shiny::column(
                 shiny::dateRangeInput("date_range", NULL, start=date_range[[1]], end=date_range[[2]], width="100%"),
                 width = 3

@@ -1,5 +1,6 @@
 # myClimGui 1.1.2
 * Tag and value can be edited in the edit state dialog.
+* The states can be highlighted in the main plot.
 
 # myClimGui 1.1.1
 * The missing logger name after filtering has been fixed.

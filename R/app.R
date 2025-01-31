@@ -83,6 +83,7 @@ mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
 
     server <- function (input, output, session) {
         shared <- .app_get_initialized_shared(data, data_loggers)
+        .server_plot_update_tags(session, shared$tags)
         states_table_value <- shiny::reactiveVal()
         data_table_value <- shiny::reactiveVal()
         
@@ -119,5 +120,14 @@ mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
     result$crop_range <- NULL
     result$last_crop_range_params <- list(crop_range = NULL,
                                           selection_table = NULL)
+    .app_shared_load_tags_if_need(result)
     return(result)
+}
+
+.app_shared_load_tags_if_need <- function(shared, edited_tags=NULL){
+    if(!is.null(edited_tags) && all(edited_tags %in% shared$tags)) {
+        return(FALSE)
+    }
+    shared$tags <- .data_get_all_tags(shared$data)
+    return(TRUE)
 }

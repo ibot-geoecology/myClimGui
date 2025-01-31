@@ -217,6 +217,10 @@
 
 .server_states_reload_data_after_edit <- function(input, session, shared, states_table_value) {
     .server_states_reload_table(input, session, shared, states_table_value)
+    table_tags <- unique(states_table_value()$table$tag)
+    if(.app_shared_load_tags_if_need(shared, table_tags)) {
+        .server_plot_update_tags(session, shared$tags)
+    }
 }
 
 .server_states_reload_table <- function(input, session, shared, states_table_value) {

@@ -240,3 +240,9 @@
     colnames(wide_table) <- name_env$columns
     return(wide_table)
 }
+
+.data_get_all_tags <- function(data) {
+    result <- unique(myClim::mc_info_states(data)$tag)
+    result <- sort(result)
+    return(result)
+}
