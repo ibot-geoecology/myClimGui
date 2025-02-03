@@ -89,6 +89,10 @@
         shiny::removeModal()
     })
     
+    shiny::observeEvent(input$cancel_form_button, {
+        shiny::removeModal()
+    })
+    
     shiny::observeEvent(input$states_use_plotly_checkbox, {
         if(input$states_use_plotly_checkbox) {
             shinyjs::show(id="states_plotly")
@@ -274,14 +278,44 @@
     }
     shiny::showModal(shiny::modalDialog(title=title,
                                         size="l",
-                                        footer= shiny::tagList(
-                                            shiny::modalButton(.texts_cancel),
-                                            shiny::actionButton("confirm_state_form_button", button_text)
-                                        ),
+                                        footer=NULL,
                                         message_text,
                                         shiny::textInput("edit_tag", tag_title, placeholder = placeholder),
                                         shiny::textInput("edit_value", value_title, placeholder = placeholder),
-                                        shiny::actionButton("clear_range_state_form_button", .texts_clear, icon=shiny::icon("trash-can")),
+                                        shiny::fluidRow(
+                                            shiny::column(
+                                                shiny::dateInput("edit_start_date", .texts_start_date, format="yyyy-mm-dd", width="100%"),
+                                                width = 2,
+                                                style="padding-right: 0px;"
+                                            ),
+                                            shiny::column(
+                                                shinyTime::timeInput("edit_start_time", .texts_start_time, seconds=FALSE),
+                                                width = 3
+                                            ),
+                                            shiny::column(
+                                                shiny::dateInput("edit_end_date", .texts_end_date, format="yyyy-mm-dd", width="100%"),
+                                                width = 2,
+                                                style="padding-right: 0px;"
+                                            ),
+                                            shiny::column(
+                                                shinyTime::timeInput("edit_end_time", .texts_end_time, seconds=FALSE),
+                                                width = 3
+                                            ),
+                                            shiny::column(
+                                                shiny::actionButton("clear_range_state_form_button", .texts_clear, icon=shiny::icon("trash-can")),
+                                                width = 2
+                                            )),
+                                        shiny::fluidRow(
+                                            shiny::column(
+                                                shiny::actionButton("cancel_form_button", .texts_cancel, width="100%"),
+                                                width = 2,
+                                                style="padding-right: 2px;"
+                                            ),
+                                            shiny::column(
+                                                shiny::actionButton("confirm_state_form_button", button_text, width="100%"),
+                                                width = 2,
+                                                style="padding-left: 2px;"
+                                            )),
                                         shiny::tagAppendAttributes(
                                             shiny::textOutput("selected_range_text", inline = TRUE),
                                             style="font-weight: bold; "),

@@ -25,6 +25,7 @@ Imports:
     shinyjs,
     shinyTree,
     shinythemes,
+    shinyTime,
     purrr,
     stringr,
     lubridate,

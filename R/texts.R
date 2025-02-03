@@ -9,6 +9,10 @@
 .texts_value <- "Value"
 .texts_clear <- "Clear"
 .texts_unchanged <- "Unchanged"
+.texts_start_date <- "Start date"
+.texts_end_date <- "End date"
+.texts_start_time <- "Start time"
+.texts_end_time <- "End time"
 
 # plot
 .texts_plot_no_tag <- "No visible tag"
