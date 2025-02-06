@@ -188,23 +188,7 @@
     end_datetime <- max(lubridate::int_end(intervals))
     crop_data <- myClim::mc_prep_crop(filter_data, start_datetime, end_datetime)
     is_agg <- myClim:::.common_is_agg_format(data)
-    sensors_item <- NULL
-    if(length(crop_data$localities) == 1) {
-        if(is_agg) {
-            sensors_itme <- crop_data$localities[[1]]
-        } else if (length(crop_data$localities[[1]]$loggers) == 1) {
-            sensors_item <- crop_data$localities[[1]]$loggers[[1]]
-        }
-    }
-    if(is.null(sensors_item)) {
-        result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
-        result <- .data_rename_dataview_columns(data, selection_table, result)
-    } else {
-        result <- data.frame(datetime=sensors_item$datetime)
-        for(sensor_name in names(sensors_item$sensors)) {
-            result[[sensor_name]] <- sensors_item$sensors[[sensor_name]]$values
-        }
-    }
+    result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
     if(length(intervals) > 1) {
         conditions <- purrr::map(intervals, ~ lubridate::`%within%`(result$datetime, .x))
         datetime_condition <- purrr::reduce(conditions, `|`)
@@ -212,33 +196,6 @@
     }
     result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
     return(result)
-}
-
-.data_rename_dataview_columns <- function(data, selection_table, wide_table){
-    if(myClim:::.common_is_agg_format(data)) {
-        return(wide_table)
-    }
-    old_columns <- colnames(wide_table)
-    name_env <- new.env()
-    name_env$columns <- colnames(wide_table)
-    selection_table <- dplyr::group_by(selection_table, .data$locality_id)
-
-    rename_function <- function(old_column_preffix, new_column_preffix) {
-        old_column_preffix <- stringr::fixed(old_column_preffix)
-        condition <- stringr::str_starts(old_columns, old_column_preffix)
-        name_env$columns[condition] <- stringr::str_replace(name_env$columns[condition], old_column_preffix, new_column_preffix)
-    }
-
-    group_function <- function(group_table, .y) {
-        indexes <- sort(unique(group_table$logger_name))
-        wrong_indexes <- seq_along(indexes)
-        old_column_preffix <- as.character(stringr::str_glue("{.y$locality_id[[1]]}_{wrong_indexes}_"))
-        new_column_preffix <- stringr::str_glue("{.y$locality_id[[1]]}_{indexes}_")
-        purrr::walk2(old_column_preffix, new_column_preffix, rename_function)
-    }
-    dplyr::group_walk(selection_table, group_function)
-    colnames(wide_table) <- name_env$columns
-    return(wide_table)
 }
 
 .data_get_all_tags <- function(data) {
