@@ -2,6 +2,7 @@
 * The States range can be changed directly in editors.
 * The states range selection issue has been fixed.
 * Tha states table can be saved to a file.
+* The locality is visible always in the header of data table.
 
 # myClimGui 1.1.2
 * Tag and value can be edited in the edit state dialog.
