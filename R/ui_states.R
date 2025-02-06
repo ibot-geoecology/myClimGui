@@ -3,8 +3,20 @@
                     icon = shiny::icon("tags"),
         shiny::fluidRow(
             shiny::column(
-                shiny::checkboxInput("filter_by_plot_checkbox", "Filter by plot", value=TRUE),
+                shiny::checkboxInput("filter_by_plot_checkbox", .texts_plot_filter_by_plot, value=TRUE),
                 width = 2,
+            ),
+            shiny::column(
+                width = 5,
+            ),
+            shiny::column(
+                shiny::actionButton("save_states_button", .texts_plot_save_states),
+                width = 2,
+                style="padding-right: 0px; text-align: right; ",
+            ),
+            shiny::column(
+                shiny::textInput("file_states_textinput", NULL, value="states_backup.rds", width="100%"),
+                width = 3,
             ),
         ),
         shiny::fluidRow(

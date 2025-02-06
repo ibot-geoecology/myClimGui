@@ -16,7 +16,7 @@
     shiny::observeEvent(input$edit_state_button, {
         selected_rows <- input$states_table_rows_selected
         if(length(selected_rows) == 0) {
-            shiny::showNotification(.texts_states_not_selected_states_notification)
+            shiny::showNotification(.texts_states_not_selected_states_notification, type = "error")
             return(NULL)
         }
         action_selected_rows(selected_rows)
@@ -45,7 +45,7 @@
         selected_rows <- input$states_table_rows_selected
         count_states <- length(selected_rows)
         if(count_states == 0) {
-            shiny::showNotification(.texts_states_not_selected_states_notification)
+            shiny::showNotification(.texts_states_not_selected_states_notification, type = "error")
             return(NULL)
         }
         action_selected_rows(selected_rows)
@@ -72,13 +72,13 @@
         end <- editors_range[[2]]
         table_range <- range(edit_range_table_value()$datetime)
         if(is.na(start) || is.na(end) || start > end || start > table_range[[2]] || end < table_range[[1]]) {
-            shiny::showNotification(.texts_states_not_correct_range_notification)
+            shiny::showNotification(.texts_states_not_correct_range_notification, type = "error")
             return()
         }
         if(form_mode() == "new")
         {
             if(input$edit_tag == "") {
-                shiny::showNotification(.texts_states_empty_tag_notification)
+                shiny::showNotification(.texts_states_empty_tag_notification, type = "error")
                 return()
             }
             shared$data <- .server_states_add_states(shared, start, end, input$edit_tag, input$edit_value)
@@ -130,6 +130,12 @@
 
     shiny::observeEvent(input$clear_range_state_form_button, {
         .server_states_clean_range_selection(selected_range_value)
+    })
+
+    shiny::observeEvent(input$save_states_button, {
+        states_table <- myClim::mc_info_states(shared$data)
+        saveRDS(states_table, input$file_states_textinput)
+        shiny::showNotification(stringr::str_glue("States saved to {input$file_states_textinput}"))
     })
 
     # Update start and end date and time inputs by changed selected_range_value

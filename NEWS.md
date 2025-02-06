@@ -1,3 +1,8 @@
+# myClimGui 1.1.3
+* The States range can be changed directly in editors.
+* The states range selection issue has been fixed.
+* Tha states table can be saved to a file.
+
 # myClimGui 1.1.2
 * Tag and value can be edited in the edit state dialog.
 * The states can be highlighted in the main plot.

@@ -18,6 +18,8 @@
 # plot
 .texts_plot_no_tag <- "No visible tag"
 .texts_plot_no_tag_value <- " "
+.texts_plot_save_states <- "Save states"
+.texts_plot_filter_by_plot <- "Filter by plot"
 
 # states
 .texts_states_delete_states_question <- "Delete {count_states} states?"
