@@ -24,7 +24,8 @@
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
         edit_range_table_value(.server_states_get_table_for_edit_range(shared, df_states, selected_rows))
         edit_states_table <- df_states[action_selected_rows(), ]
-        selection_range <- .server_states_get_range_table_selection(edit_range_table_value(), edit_states_table,
+        edit_date_range <- .server_states_get_edit_date_range(edit_states_table)
+        selection_range <- .server_states_get_range_table_selection(edit_range_table_value(), edit_date_range,
                                                                     selected_range_value)
         selected_range_value(list(is_init=TRUE, value=selection_range))
         .server_states_open_form_dialog(FALSE, edit_states_table)
@@ -66,8 +67,11 @@
     })
    
     shiny::observeEvent(input$confirm_state_form_button, {
-        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()$value]
-        if(length(selected_datetimes) == 0 || length(selected_datetimes) > 2) {
+        editors_range <- .server_states_get_range_from_editors(input)
+        start <- editors_range[[1]]
+        end <- editors_range[[2]]
+        table_range <- range(edit_range_table_value()$datetime)
+        if(is.na(start) || is.na(end) || start > end || start > table_range[[2]] || end < table_range[[1]]) {
             shiny::showNotification(.texts_states_not_correct_range_notification)
             return()
         }
@@ -77,12 +81,12 @@
                 shiny::showNotification(.texts_states_empty_tag_notification)
                 return()
             }
-            shared$data <- .server_states_add_states(shared, selected_datetimes, input$edit_tag, input$edit_value)
+            shared$data <- .server_states_add_states(shared, start, end, input$edit_tag, input$edit_value)
         } else if(form_mode() == "edit") {
             df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
             changed_table <- df_states[action_selected_rows(), ]
             action_selected_rows(NULL)
-            shared$data <- .server_states_edit_form(shared$data, changed_table, selected_datetimes, input)
+            shared$data <- .server_states_edit_form(shared$data, changed_table, start, end, input)
         }
         
         .server_states_reload_data_after_edit(input, session, shared, states_table_value)
@@ -126,6 +130,64 @@
 
     shiny::observeEvent(input$clear_range_state_form_button, {
         .server_states_clean_range_selection(selected_range_value)
+    })
+
+    # Update start and end date and time inputs by changed selected_range_value
+    shiny::observe({
+        start_date <- as.Date(NA)
+        start_time <- lubridate::ymd_h("1970-01-01 00")
+        end_date <- as.Date(NA)
+        end_time <- start_time
+        range_value <- selected_range_value()
+        if(!is.null(range_value$value)) {
+            shiny::isolate(selected_datetimes <- edit_range_table_value()$datetime[range_value$value])
+            start_date <- lubridate::ymd_hms(selected_datetimes[[1]])
+            start_time <- start_date
+            end_date <- lubridate::ymd_hms(selected_datetimes[[2]])
+            end_time <- end_date
+        }
+        if(!("edit_start_date" %in% names(input))) {
+            return()
+        }
+        shiny::isolate({
+            suppressWarnings({
+                shiny::updateDateInput(session, "edit_start_date", value=start_date)
+                shinyTime::updateTimeInput(session, "edit_start_time", value=start_time)
+                shiny::updateDateInput(session, "edit_end_date", value=end_date)
+                shinyTime::updateTimeInput(session, "edit_end_time", value=end_time)})
+        })
+    })
+
+    range_editors_changed <- shiny::reactive({
+        list(input$edit_start_date,
+            input$edit_start_time,
+            input$edit_end_date,
+            input$edit_end_time)
+    })
+
+    shiny::observeEvent(range_editors_changed(), {
+        if(is.null(input$edit_start_date)) {
+            return()
+        }
+        editors_range <- .server_states_get_range_from_editors(input)
+        start <- editors_range[[1]]
+        end <- editors_range[[2]]
+        if(is.na(start)) {
+            return()
+        }
+        if(is.na(end)) {
+            shiny::updateDateInput(session, "edit_end_date", value=start)
+            return()
+        }
+        if(start > end) {
+            return()
+        }
+        shiny::isolate({
+            previous_range <- selected_range_value()$value
+            output_range <- .server_states_get_range_table_selection(edit_range_table_value(), c(start, end),
+                                                                     selected_range_value)
+        })
+        .server_states_change_range_selection(previous_range, output_range, selected_range_value)
     })
 
     output$states_table <- DT::renderDataTable({
@@ -187,18 +249,6 @@
                                               scrollX = TRUE))
         return(result)
     })
-    
-    output$selected_range_text <- shiny::renderText({
-        if(is.null(selected_range_value()$value)) {
-            return(.texts_states_not_selected_range)
-        }
-        selected_datetimes <- edit_range_table_value()$datetime[selected_range_value()$value]
-        if(selected_datetimes[[1]] == selected_datetimes[[2]]) {
-            return(paste0(.texts_selected_semicolon, selected_datetimes[[1]]))
-        }
-        return(stringr::str_glue("{.texts_selected_semicolon}{selected_datetimes[[1]]} - {selected_datetimes[[2]]}"))
-    })
-
 }
 
 .server_states_get_table_for_dt <- function(states_table, selected_rows) {
@@ -266,7 +316,7 @@
     placeholder <- ""
     if(is_new_state) {
         message_text <- shiny::span(.texts_states_new_states_warning)
-        button_text <- .texts_new
+        button_text <- .texts_create
         title <- .texts_states_new_states
     }
     if(!is.null(edit_states_table)) {
@@ -284,7 +334,9 @@
                                         shiny::textInput("edit_value", value_title, placeholder = placeholder),
                                         shiny::fluidRow(
                                             shiny::column(
-                                                shiny::dateInput("edit_start_date", .texts_start_date, format="yyyy-mm-dd", width="100%"),
+                                                suppressWarnings(
+                                                    shiny::dateInput("edit_start_date", .texts_start_date,
+                                                                     value=as.Date(NA), width="100%")),
                                                 width = 2,
                                                 style="padding-right: 0px;"
                                             ),
@@ -293,7 +345,9 @@
                                                 width = 3
                                             ),
                                             shiny::column(
-                                                shiny::dateInput("edit_end_date", .texts_end_date, format="yyyy-mm-dd", width="100%"),
+                                                suppressWarnings(
+                                                    shiny::dateInput("edit_end_date", .texts_end_date,
+                                                                     value=as.Date(NA), width="100%")),
                                                 width = 2,
                                                 style="padding-right: 0px;"
                                             ),
@@ -307,6 +361,9 @@
                                             )),
                                         shiny::fluidRow(
                                             shiny::column(
+                                                width = 8
+                                            ),
+                                            shiny::column(
                                                 shiny::actionButton("cancel_form_button", .texts_cancel, width="100%"),
                                                 width = 2,
                                                 style="padding-right: 2px;"
@@ -316,9 +373,6 @@
                                                 width = 2,
                                                 style="padding-left: 2px;"
                                             )),
-                                        shiny::tagAppendAttributes(
-                                            shiny::textOutput("selected_range_text", inline = TRUE),
-                                            style="font-weight: bold; "),
                                         shiny::br(),
                                         shiny::br(),
                                         DT::dataTableOutput("edit_range_table")))
@@ -335,14 +389,10 @@
     return(result)
 }
 
-.server_states_edit_form <- function(data, changed_table, selected_datetimes, input) {
+.server_states_edit_form <- function(data, changed_table, start, end, input) {
     new_values <- list()
-    new_values[["start"]] <- lubridate::ymd_hms(selected_datetimes[[1]])
-    if(length(selected_datetimes) == 1) {
-        new_values[["end"]] <- new_values[["start"]]
-    } else {
-        new_values[["end"]] <- lubridate::ymd_hms(selected_datetimes[[2]])
-    }
+    new_values[["start"]] <- start
+    new_values[["end"]] <- end
     if(input$edit_tag != "") {
         new_values[["tag"]] <- input$edit_tag
     }
@@ -354,13 +404,8 @@
 }
 
 
-.server_states_add_states <- function(shared, selected_datetimes, tag, value) {
+.server_states_add_states <- function(shared, start, end, tag, value) {
     ranges_table <- .data_selection_table_add_range(shared$data, shared$selection_table)
-    start <- lubridate::ymd_hms(selected_datetimes[[1]])
-    end <- start
-    if(length(selected_datetimes) > 1) {
-        end <- lubridate::ymd_hms(selected_datetimes[[2]])
-    }
     selected_interval <- lubridate::interval(start=start, end=end)
     
     selection_table <- shared$selection_table[lubridate::int_overlaps(ranges_table$int, selected_interval), ]
@@ -409,13 +454,20 @@
     return(result)
 }
 
-.server_states_get_range_table_selection <- function(range_table, edit_states_table, selected_range_value) {
-    start <- min(edit_states_table$start) |>
-        format("%Y-%m-%d %H:%M:%S") 
-    end <- max(edit_states_table$end) |>
-        format("%Y-%m-%d %H:%M:%S")
+.server_states_get_edit_date_range <- function(edit_states_table) {
+    start <- min(edit_states_table$start)
+    end <- max(edit_states_table$end)
+    return(c(start, end))
+}
+
+.server_states_get_range_table_selection <- function(range_table, edit_date_range, selected_range_value) {
+    start <- format(edit_date_range[[1]], "%Y-%m-%d %H:%M:%S") 
+    end <- format(edit_date_range[[2]], "%Y-%m-%d %H:%M:%S")
     condition <- (range_table$datetime >= start) & (range_table$datetime <= end)
     indexes <- which(condition)
+    if(length(indexes) == 0) {
+        return(NULL)
+    }
     return(c(min(indexes), max(indexes)))
 }
 
@@ -423,7 +475,11 @@
     if(length(selected_rows) == 0) {
         return(NULL)
     }
-    if(is.null(previous_range) || min(selected_rows) < previous_range[[1]] || max(selected_rows) > previous_range[[2]]) {
+    if(is.null(previous_range) ||
+        min(selected_rows) < previous_range[[1]] ||
+        max(selected_rows) > previous_range[[2]] ||
+        length(selected_rows) == 1 ||
+        all(diff(selected_rows) == 1)) {
         return(c(min(selected_rows), max(selected_rows)))
     }
     selected_table <- tibble::tibble(row_id=selected_rows, selected=TRUE)
@@ -463,4 +519,28 @@
 .server_states_clean_range_selection <- function(selected_range_value) {
     DT::selectRows(DT::dataTableProxy("edit_range_table"), NULL)
     selected_range_value(list(is_init=FALSE, value=NULL))
+}
+
+.server_states_get_range_from_editors <- function(input) {
+    start_date <- input$edit_start_date
+    start_time <- input$edit_start_time
+    end_date <- input$edit_end_date
+    end_time <- input$edit_end_time
+    if(length(start_date) == 0) {
+        start <- lubridate::NA_Date_
+    } else {
+        start <- as.POSIXct(start_date) +
+            lubridate::hour(start_time) * 60 * 60 +
+            lubridate::minute(start_time) * 60 +
+            lubridate::second(start_time)
+    }
+    if(length(end_date) == 0) {
+        end <- lubridate::NA_Date_
+    } else {
+        end <- as.POSIXct(end_date) +
+            lubridate::hour(end_time) * 60 * 60 +
+            lubridate::minute(end_time) * 60 +
+            lubridate::second(end_time)
+    }
+    return(c(start, end))
 }
