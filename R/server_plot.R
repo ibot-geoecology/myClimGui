@@ -275,7 +275,7 @@
     selected_facet_text <- input$facet_select
     facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
-    tag <- if(input$plot_tag_select == .texts_plot_no_tag_value) NULL else input$plot_tag_select
+    tag <- if(input$plot_tag_select %in% c("", .texts_plot_no_tag_value)) NULL else input$plot_tag_select
     plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger, tag=tag)
     return(plot)
 }

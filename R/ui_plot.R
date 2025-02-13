@@ -40,7 +40,7 @@
                                    width="100%"),
                 width = 2),
             shiny::column(
-                shiny::selectInput("plot_tag_select", NULL, NULL,
+                shiny::selectInput("plot_tag_select", NULL, c(.texts_plot_no_tag_value),
                                    selected=.texts_plot_no_tag_value, width="100%"),
                 width = 2),
             shiny::column(width = 2),

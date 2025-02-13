@@ -1,3 +1,6 @@
+# myClimGui 1.1.4
+* The init selected tag issue has been fixed.
+
 # myClimGui 1.1.3
 * The States range can be changed directly in editors.
 * The states range selection issue has been fixed.
