@@ -1,33 +1,33 @@
-.ui_plot_tab <- function(data, data_loggers) {
+.ui_plot_tab <- function(shared) {
     shiny::tabPanel(.ui_const_PLOT_TITLE,
                     icon = shiny::icon("chart-line"),
                     shiny::tags$style(
                         shiny::HTML("#sidebar {height: calc(100vh - 95px); overflow-y: auto; }")),
                     shiny::sidebarLayout(
-                        .ui_plot_sidebar(data, data_loggers),
-                        .ui_plot_body(data),
+                        .ui_plot_sidebar(shared),
+                        .ui_plot_body(shared),
                         position = c("left", "right"),
                         fluid = TRUE)
     )
 }
 
-.ui_plot_sidebar <- function(data, data_loggers) {
+.ui_plot_sidebar <- function(shared) {
     shiny::sidebarPanel(
         shiny::checkboxGroupInput("settings_checkboxes", label=NULL,
                                   choices=c("Multi select" = .app_const_SETTINGS_MULTI_SELECT_KEY,
                                             "Plotly" = .app_const_SETTINGS_PLOTLY_KEY,
                                             "Color by logger" = .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)),
-        shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(data)), width="100%",
+        shiny::selectInput("sensor_select", "Sensors", sort(.data_get_sensors(shared$data)), width="100%",
                            multiple=TRUE),
         shinyTree::shinyTree("data_tree", checkbox=TRUE, theme="proton", themeIcons=FALSE),
-        shiny::radioButtons("data_loggers", label=NULL, choices=sort(names(data_loggers))),
+        shiny::radioButtons("data_loggers", label=NULL, choices=sort(names(shared$data_loggers))),
         id="sidebar",
         width=3
     )
 }
 
-.ui_plot_body <- function(data) {
-    date_range <- .data_get_date_range(data, "day")
+.ui_plot_body <- function(shared) {
+    date_range <- .data_get_date_range(shared$data, "day")
     return(shiny::mainPanel(
         shiny::fluidRow(
             shiny::column(

@@ -1,4 +1,4 @@
-.ui_data_tab <- function(data) {
+.ui_data_tab <- function(shared) {
     shiny::tabPanel(.ui_const_DATA_TITLE,
                     icon = shiny::icon("table"),
         shiny::fluidRow(

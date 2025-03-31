@@ -201,7 +201,7 @@
             return(NULL)
         }
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
-        return(.server_states_get_table_for_dt(df_states, states_table_value()$selected_rows))
+        return(.server_states_get_table_for_dt(df_states, !shared$is_uncleaned_raw))
     }, server = FALSE)
     
     output$states_plotly <- plotly::renderPlotly({
@@ -257,15 +257,19 @@
     })
 }
 
-.server_states_get_table_for_dt <- function(states_table, selected_rows) {
+.server_states_get_table_for_dt <- function(states_table, is_editable) {
     states_table$start <- format(states_table$start, "%Y-%m-%d %H:%M:%S")
     states_table$end <- format(states_table$end, "%Y-%m-%d %H:%M:%S")
+    editable <- NULL
+    if(is_editable) {
+        editable <- list(target = "cell", disable = list(columns = c(1, 2, 3, 5, 6)))
+    }
     result <-DT::datatable(states_table,
                            selection = "none", #list(target="row", selected=selected_rows),
                            options = list(pageLength = 10,
                                           select = list(style = "os", items = "row")),
                            extensions = c('Select'),
-                           editable = list(target = "cell", disable = list(columns = c(1, 2, 3, 5, 6))))
+                           editable = editable)
     return(result)
 }
 

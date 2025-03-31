@@ -78,11 +78,11 @@ mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
 }
 
 .app_get_shiny_object <- function(data) {
-    data_loggers <- .data_get_locality_logger_type(data)
-    ui <- .ui_get_main(data, data_loggers)
+    init_shared <- .app_get_initialized_shared(data)
+    ui <- .ui_get_main(init_shared)
 
     server <- function (input, output, session) {
-        shared <- .app_get_initialized_shared(data, data_loggers)
+        shared <- as.environment(as.list(init_shared, all.names=TRUE))
         .server_plot_update_tags(session, shared$tags)
         states_table_value <- shiny::reactiveVal()
         data_table_value <- shiny::reactiveVal()
@@ -111,15 +111,16 @@ mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
     return(shiny::shinyApp(ui, server))
 }
 
-.app_get_initialized_shared <- function(data, data_loggers) {
+.app_get_initialized_shared <- function(data) {
     result <- new.env()
     result$data <- data
-    result$data_loggers <- data_loggers
+    result$data_loggers <- .data_get_locality_logger_type(data)
     result$data_range <- .data_get_date_range(data)
     result$selection_table <- NULL
     result$crop_range <- NULL
     result$last_crop_range_params <- list(crop_range = NULL,
                                           selection_table = NULL)
+    result$is_uncleaned_raw <- myClim:::.common_is_raw_format(data) && !myClim:::.prep_is_datetime_step_processed_in_object(data)
     .app_shared_load_tags_if_need(result)
     return(result)
 }

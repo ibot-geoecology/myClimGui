@@ -2,7 +2,7 @@
 .ui_const_STATES_TITLE <- "States"
 .ui_const_DATA_TITLE <- "Data"
 
-.ui_get_main <- function(data, data_loggers) {
+.ui_get_main <- function(shared) {
     shiny::fluidPage(theme = shinythemes::shinytheme("flatly"),
         style = "padding: 0px;",
         shiny::tags$script(shiny::HTML('
@@ -38,9 +38,9 @@
             shiny::textOutput("datetime_range_text"), style="font-weight: bold; color: white; position: absolute; top: 30px; right: 120px; z-index:10000;"),
         shinyjs::useShinyjs(),
         shiny::navbarPage("myClimGui",
-                          .ui_plot_tab(data, data_loggers),
-                          .ui_states_tab(data),
-                          .ui_data_tab(data),
+                          .ui_plot_tab(shared),
+                          .ui_states_tab(shared),
+                          .ui_data_tab(sahred),
                           id="navbar_page"))
 }
 

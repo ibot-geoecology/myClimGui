@@ -1,4 +1,4 @@
-.ui_states_tab <- function(data) {
+.ui_states_tab <- function(shared) {
     shiny::tabPanel(.ui_const_STATES_TITLE,
                     icon = shiny::icon("tags"),
         shiny::fluidRow(
@@ -26,9 +26,9 @@
                 style="padding: 5px; "
             ),
             shiny::column(
-                shiny::actionButton("new_state_button", .texts_new),
-                shiny::actionButton("edit_state_button", .texts_edit),
-                shiny::actionButton("delete_states_button", .texts_delete),
+                shiny::actionButton("new_state_button", .texts_new, disabled = shared$is_uncleaned_raw),
+                shiny::actionButton("edit_state_button", .texts_edit, disabled = shared$is_uncleaned_raw),
+                shiny::actionButton("delete_states_button", .texts_delete, disabled = shared$is_uncleaned_raw),
                 width = 6,
                 style="padding: 5px; text-align: right;",
             ),
