@@ -28,6 +28,10 @@
 
 .ui_plot_body <- function(shared) {
     date_range <- .data_get_date_range(shared$data, "day")
+    facet_options <- c("NULL", "locality", "physical")
+    if(shared$is_uncleaned_raw) {
+        facet_options <- c(facet_options, .texts_plot_index_x)
+    }
     return(shiny::mainPanel(
         shiny::fluidRow(
             shiny::column(
@@ -36,7 +40,7 @@
                 width = 2
             ),
             shiny::column(
-                shiny::selectInput("facet_select", NULL, c("NULL", "locality", "physical"), selected="physical",
+                shiny::selectInput("facet_select", NULL, facet_options, selected="physical",
                                    width="100%"),
                 width = 2),
             shiny::column(

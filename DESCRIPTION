@@ -35,7 +35,8 @@ Imports:
     RColorBrewer,
     ggplot2,
     DT,
-    callr
+    callr,
+    patchwork,
 Roxygen: list(markdown = TRUE)
 Suggests:
     rmarkdown,

@@ -273,10 +273,14 @@
 .server_plot_get_plot <- function(data, input)
 {
     selected_facet_text <- input$facet_select
-    facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
-    tag <- if(input$plot_tag_select %in% c("", .texts_plot_no_tag_value)) NULL else input$plot_tag_select
-    plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger, tag=tag)
+    if(selected_facet_text == .texts_plot_index_x) {
+        plot <- .plot_loggers_x_index(data, color_by_logger)
+    } else {
+        facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
+        tag <- if(input$plot_tag_select %in% c("", .texts_plot_no_tag_value)) NULL else input$plot_tag_select
+        plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger, tag=tag)
+    }
     return(plot)
 }
 

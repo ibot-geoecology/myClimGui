@@ -98,3 +98,78 @@
     rectangles <- dplyr::group_map(group_tags_table, group_function)
     return(rectangles)
 }
+
+.plot_loggers_x_index <- function(data, color_by_logger=FALSE) {
+    loggers_table <- myClim::mc_info_logger(data)
+    localities <- unique(loggers_table$locality_id)
+    if(length(localities) > 1) {
+        stop("This type of plot is not supported for multiple localities.")
+    }
+
+    data_table <- .plot_loggers_x_index_data_table(data)
+    datetime_table <- .plot_loggers_x_index_datetime_table(data)
+    sensors_table <- NULL
+    if(!color_by_logger) {
+        sensors_table <- myClim:::.plot_get_sensors_table(data, "physical")
+        sensors_table <- dplyr::bind_rows(sensors_table,
+                                          tibble::tibble(sensor="datetime",
+                                                         physical="datetime",
+                                                         color="gray",
+                                                         main_axis=TRUE))
+    }
+
+    plot_function <- function(data_table) {
+        plot <- ggplot2::ggplot(data=data_table, ggplot2::aes(x=.data$index, y=.data$value,
+                                                              group=.data$series, colour=.data$series,
+                                                              fill=.data$series)) +
+                ggplot2::geom_line(ggplot2::aes(color=.data$series)) +
+                ggplot2::facet_grid(rows = ggplot2::vars(.data$physical), scales="free")
+        if(!is.null(sensors_table)) {
+            plot <- myClim:::.plot_line_set_sensor_colors(plot, data_table, sensors_table)
+        } else {
+            plot <- plot + ggplot2::scale_color_manual(values=myClim:::.plot_const_PALETTE) +
+                ggplot2::scale_fill_manual(values=myClim:::.plot_const_PALETTE)
+        }
+        return(plot)
+    }
+
+    data_plot <- plot_function(data_table)
+    datetime_plot <- plot_function(datetime_table)
+    
+    plot <- patchwork::wrap_plots(datetime_plot, data_plot, ncol=1)
+
+    return(plot)
+}
+
+.plot_loggers_x_index_data_table <- function(data) {
+    logger_function <- function(logger) {
+        sensor_function <- function(sensor) {
+            sensor_info <- myClim::mc_data_sensors[[sensor$metadata@sensor_id]]
+            result <- tibble::tibble(index=seq_along(logger$datetime),
+                                     sensor_name=sensor$metadata@name,
+                                     series=stringr::str_glue("{logger$metadata@name} {sensor$metadata@name}"),
+                                     physical=sensor_info@physical,
+                                     value=sensor$values)
+            return(result)
+        }
+        sensors_data_table <- purrr::map_dfr(logger$sensors, sensor_function)
+        return(sensors_data_table)
+    }
+    locality <- dplyr::first(data$localities)
+    result <- purrr::map_dfr(locality$loggers, logger_function)
+    return(result)
+}
+
+.plot_loggers_x_index_datetime_table <- function(data) {
+    logger_function <- function(logger) {
+        datetime_table <- tibble::tibble(index=seq_along(logger$datetime),
+                                         sensor_name="datetime",
+                                         series=stringr::str_glue("{logger$metadata@name} datetime"),
+                                         physical="datetime",
+                                         value=logger$datetime)
+        return(datetime_table)
+    }
+    locality <- dplyr::first(data$localities)
+    result <- purrr::map_dfr(locality$loggers, logger_function)
+    return(result)
+}
