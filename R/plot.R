@@ -108,37 +108,45 @@
 
     data_table <- .plot_loggers_x_index_data_table(data)
     datetime_table <- .plot_loggers_x_index_datetime_table(data)
-    sensors_table <- NULL
-    if(!color_by_logger) {
-        sensors_table <- myClim:::.plot_get_sensors_table(data, "physical")
-        sensors_table <- dplyr::bind_rows(sensors_table,
-                                          tibble::tibble(sensor="datetime",
-                                                         physical="datetime",
-                                                         color="gray",
-                                                         main_axis=TRUE))
+    sensors_table <- myClim:::.plot_get_sensors_table(data, "physical")
+    sensors_table <- dplyr::bind_rows(tibble::tibble(sensor="datetime",
+                                                        physical="datetime",
+                                                        color="gray",
+                                                        main_axis=TRUE),
+                                      sensors_table)
+    if(color_by_logger) {
+        series <- c(unique(datetime_table$series),
+                    unique(data_table$series))
+        color_table <- tibble::tibble(series=series,
+                                      color=myClim:::.plot_const_PALETTE[1:length(series)])
+    } else {
+        series_table <- dplyr::bind_rows(dplyr::distinct(data_table, .data$sensor_name, .data$series),
+                                         dplyr::distinct(datetime_table, .data$sensor_name, .data$series))
+        color_table <- dplyr::select(sensors_table, "sensor", "color")
+        color_table <- dplyr::left_join(series_table, color_table, by=c("sensor_name"="sensor"))
     }
+    color_values <- color_table$color
+    names(color_values) <- color_table$series
 
-    plot_function <- function(data_table) {
-        plot <- ggplot2::ggplot(data=data_table, ggplot2::aes(x=.data$index, y=.data$value,
-                                                              group=.data$series, colour=.data$series,
-                                                              fill=.data$series)) +
-                ggplot2::geom_line(ggplot2::aes(color=.data$series)) +
-                ggplot2::facet_grid(rows = ggplot2::vars(.data$physical), scales="free")
-        if(!is.null(sensors_table)) {
-            plot <- myClim:::.plot_line_set_sensor_colors(plot, data_table, sensors_table)
+    plot_function <- function(physical_value) {
+        if(physical_value == "datetime") {
+            plot_data_table <- datetime_table
         } else {
-            plot <- plot + ggplot2::scale_color_manual(values=myClim:::.plot_const_PALETTE) +
-                ggplot2::scale_fill_manual(values=myClim:::.plot_const_PALETTE)
+            plot_data_table <- dplyr::filter(data_table, .data$physical == physical_value)
         }
+        plot <- ggplot2::ggplot(data=plot_data_table,
+                                mapping=ggplot2::aes(x=.data$index, y=.data$value,
+                                                     group=.data$series, colour=.data$series,
+                                                     fill=.data$series)) +
+                ggplot2::geom_line(mapping = ggplot2::aes(color=.data$series)) +
+                ggplot2::scale_color_manual(values=color_values) +
+                ggplot2::scale_fill_manual(values=color_values)
         return(plot)
     }
 
-    data_plot <- plot_function(data_table)
-    datetime_plot <- plot_function(datetime_table)
-    
-    plot <- patchwork::wrap_plots(datetime_plot, data_plot, ncol=1)
+    plots <- purrr::map(unique(sensors_table$physical), plot_function)
 
-    return(plot)
+    return(plots)
 }
 
 .plot_loggers_x_index_data_table <- function(data) {

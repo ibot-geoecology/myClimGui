@@ -29,7 +29,7 @@
     }, ignoreNULL = FALSE)
 
     shiny::observeEvent(input$plot_dblclick, {
-        .server_plot_dblclick_event(input, zoom_range)
+        .server_plot_dblclick_event(input, zoom_range, last_datetime_range)
         .server_plot_change_selected_data(input, shared, last_datetime_range,
                                           zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
@@ -84,11 +84,11 @@
             filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
             crop_data <- myClim::mc_prep_crop(filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
         }
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
-        if(is.null(plot)) {
+        plots <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
+        if(is.null(plots)) {
             p <- plotly::ggplotly(ggplot2::ggplot())
         } else {
-            p <- plotly::ggplotly(plot)
+            p <- plotly::subplot(plots, nrows=length(plots), shareX = TRUE)
         }
         p <- plotly::event_register(p, "plotly_relayout")
         return(p)
@@ -104,11 +104,12 @@
             filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
             crop_data <- myClim::mc_prep_crop(filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
         }
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
-        if(is.null(plot)) {
+        plots <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
+        if(is.null(plots)) {
             return(NULL)
         }
-        plot
+        plot <- patchwork::wrap_plots(plots, ncol=1)
+        return(plot)
     }, res=96)
 
     output$datetime_range_text <- shiny::renderText({
@@ -189,12 +190,19 @@
     previous_sensors(input$sensor_select)
 }
 
-.server_plot_dblclick_event <- function(input, zoom_range) {
+.server_plot_dblclick_event <- function(input, zoom_range, last_datetime_range) {
     brush <- input$plot_brush
     if(is.null(brush)) {
         zoom_range(NULL)
     } else {
-        zoom_range(myClim:::.common_as_utc_posixct(c(brush$xmin, brush$xmax)))
+        domain_diff <- brush$domain$right - brush$domain$left
+        xmin <- brush$domain$left + domain_diff * brush$xmin
+        xmax <- brush$domain$left + domain_diff * brush$xmax
+        visible_range <- last_datetime_range()
+        diff <- visible_range[[2]] - visible_range[[1]]
+        new_range <- c(visible_range[[1]] + diff * xmin,
+                       visible_range[[1]] + diff * xmax)
+        zoom_range(myClim:::.common_as_utc_posixct(new_range))
     }
 }
 
@@ -225,8 +233,8 @@
     if(is.null(selected_data)) {
         return(NULL)
     }
-    shiny::isolate(plot <- .server_plot_get_plot(selected_data, input))
-    return(plot)
+    shiny::isolate(result <- .server_plot_get_plots(selected_data, input))
+    return(result)
 }
 
 .server_plot_get_crop_range <- function(input, shared, zoom_range)
@@ -270,18 +278,18 @@
     }
 }
 
-.server_plot_get_plot <- function(data, input)
+.server_plot_get_plots <- function(data, input)
 {
     selected_facet_text <- input$facet_select
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
     if(selected_facet_text == .texts_plot_index_x) {
-        plot <- .plot_loggers_x_index(data, color_by_logger)
+        result <- .plot_loggers_x_index(data, color_by_logger)
     } else {
         facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
         tag <- if(input$plot_tag_select %in% c("", .texts_plot_no_tag_value)) NULL else input$plot_tag_select
-        plot <- myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger, tag=tag)
+        result <- list(myClim::mc_plot_line(data, facet=facet, color_by_logger=color_by_logger, tag=tag))
     }
-    return(plot)
+    return(result)
 }
 
 .server_plot_reset_zoom_range_if_need <- function(selection_table, last_filtered_data_table, zoom_range) {
