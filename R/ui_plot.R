@@ -61,8 +61,11 @@
             shiny::column(
                 shiny::tags$style(type = "text/css",
                                   paste0("#plot_plotly {height: calc(100vh - 140px) !important;} ",
-                                         "#plot_ggplot {height: calc(100vh - 140px) !important;}")),
+                                         "#datetime_plot_ggplot {height: calc(30vh) !important;}")),
                 plotly::plotlyOutput("plot_plotly", width="100%"),
+                shiny::plotOutput("datetime_plot_ggplot", width="100%",
+                                  dblclick="plot_dblclick",
+                                  brush=shiny::brushOpts(id="plot_brush", resetOnNew=TRUE)),
                 shiny::plotOutput("plot_ggplot", width="100%",
                                   dblclick="plot_dblclick",
                                   brush=shiny::brushOpts(id="plot_brush", resetOnNew=TRUE)),

@@ -29,7 +29,8 @@
                     states_table.rows().deselect();
                     states_table.row(selected_index).select();
                 }
-            });')),    
+            });
+            ')),    
         shiny::actionButton("return_button", "Return", icon = shiny::icon("door-open"),
                             style = "position: absolute; top: 8px; right: 8px; z-index:10000;"),
         shiny::tagAppendAttributes(

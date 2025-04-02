@@ -99,54 +99,46 @@
     return(rectangles)
 }
 
-.plot_loggers_x_index <- function(data, color_by_logger=FALSE) {
+.plot_loggers_x_index <- function(data, color_by_logger=FALSE, is_datetime) {
     loggers_table <- myClim::mc_info_logger(data)
     localities <- unique(loggers_table$locality_id)
     if(length(localities) > 1) {
         stop("This type of plot is not supported for multiple localities.")
     }
 
-    data_table <- .plot_loggers_x_index_data_table(data)
-    datetime_table <- .plot_loggers_x_index_datetime_table(data)
-    sensors_table <- myClim:::.plot_get_sensors_table(data, "physical")
-    sensors_table <- dplyr::bind_rows(tibble::tibble(sensor="datetime",
-                                                        physical="datetime",
-                                                        color="gray",
-                                                        main_axis=TRUE),
-                                      sensors_table)
-    if(color_by_logger) {
-        series <- c(unique(datetime_table$series),
-                    unique(data_table$series))
+    if(is_datetime) {
+        sensors_table <- tibble::tibble(sensor="datetime",
+                                        physical="datetime",
+                                        color="gray",
+                                        main_axis=TRUE)
+        data_table <- .plot_loggers_x_index_datetime_table(data)
+    } else {
+        sensors_table <- myClim:::.plot_get_sensors_table(data, "physical")
+        data_table <- .plot_loggers_x_index_data_table(data)
+    }
+    if(color_by_logger && !is_datetime) {
+        series <- unique(data_table$series)
         color_table <- tibble::tibble(series=series,
                                       color=myClim:::.plot_const_PALETTE[1:length(series)])
     } else {
-        series_table <- dplyr::bind_rows(dplyr::distinct(data_table, .data$sensor_name, .data$series),
-                                         dplyr::distinct(datetime_table, .data$sensor_name, .data$series))
+        series_table <- dplyr::distinct(data_table, .data$sensor_name, .data$series)
         color_table <- dplyr::select(sensors_table, "sensor", "color")
         color_table <- dplyr::left_join(series_table, color_table, by=c("sensor_name"="sensor"))
     }
     color_values <- color_table$color
     names(color_values) <- color_table$series
 
-    plot_function <- function(physical_value) {
-        if(physical_value == "datetime") {
-            plot_data_table <- datetime_table
-        } else {
-            plot_data_table <- dplyr::filter(data_table, .data$physical == physical_value)
-        }
-        plot <- ggplot2::ggplot(data=plot_data_table,
-                                mapping=ggplot2::aes(x=.data$index, y=.data$value,
-                                                     group=.data$series, colour=.data$series,
-                                                     fill=.data$series)) +
-                ggplot2::geom_line(mapping = ggplot2::aes(color=.data$series)) +
-                ggplot2::scale_color_manual(values=color_values) +
-                ggplot2::scale_fill_manual(values=color_values)
-        return(plot)
-    }
-
-    plots <- purrr::map(unique(sensors_table$physical), plot_function)
-
-    return(plots)
+    ggplot_vars <- ggplot2::vars(.data$physical)
+    scales <- "free_y"
+    plot <- ggplot2::ggplot(data=data_table,
+                            mapping=ggplot2::aes(x=.data$index, y=.data$value,
+                                                    group=.data$series, colour=.data$series,
+                                                    fill=.data$series)) +
+            ggplot2::geom_line(mapping = ggplot2::aes(color=.data$series)) +
+            ggplot2::scale_color_manual(values=color_values) +
+            ggplot2::scale_fill_manual(values=color_values) +
+            ggplot2::facet_grid(rows = ggplot_vars, scales=scales)
+    return(plot)
 }
 
 .plot_loggers_x_index_data_table <- function(data) {
