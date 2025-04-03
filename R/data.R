@@ -203,3 +203,38 @@
     result <- sort(result)
     return(result)
 }
+
+.data_crop_by_index_range <- function(data, index_range) {
+    if(is.null(index_range)) {
+        return(data)
+    }
+
+    is_agg <- myClim:::.common_is_agg_format(data)
+
+    sensor_function <- function(sensor, indexes) {
+        sensor$values <- sensor$values[indexes]
+        return(sensor)
+    }
+
+    sensors_item_function <- function(item) {
+        indexes <- seq_along(item$datetime)
+        indexes <- indexes[indexes >= index_range[1] &
+                           indexes <= index_range[2]]
+        item$datetime <- item$datetime[indexes]
+        item$sensors <- purrr::map(item$sensors, ~ sensor_function(.x, indexes))
+        return(item)
+    }
+
+    locality_function <- function(locality) {
+        if(is_agg) {
+            locality <- sensors_item_function(locality)
+        }
+        else {
+            locality$loggers <- purrr::map(locality$loggers, sensors_item_function)
+        }
+        return(locality)
+    }
+
+    data$localities <- purrr::map(data$localities, locality_function)
+    return(data)
+}

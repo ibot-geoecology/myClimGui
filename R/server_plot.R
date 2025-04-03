@@ -57,7 +57,13 @@
     
     shiny::observeEvent(input$facet_select, {
         .server_plot_datetime_plot_visibility(input)
-        render_plot_number(render_plot_number()+1)
+        if(shared$last_crop_range_params$is_init_facet) {
+            shared$last_crop_range_params$is_init_facet <- FALSE
+            return()
+        }
+        shared$crop_range <- NULL
+        .server_plot_change_selected_data(input, shared, last_datetime_range,
+                                          zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
     
     shiny::observe({
@@ -84,7 +90,7 @@
         if(!shiny::isolate(.server_plot_is_plotly(input))) {
             return(plotly::ggplotly(ggplot2::ggplot()))
         }
-        crop_data <- .server_plot_get_data_to_plot(shared)
+        crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
         plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
             p <- plotly::ggplotly(ggplot2::ggplot())
@@ -105,7 +111,7 @@
             return(NULL)
         }
         zoom_range_value <- zoom_range()
-        crop_data <- .server_plot_get_data_to_plot(shared)
+        crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
         plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
             return(NULL)
@@ -121,7 +127,7 @@
             return(NULL)
         }
         zoom_range_value <- zoom_range()
-        crop_data <- .server_plot_get_data_to_plot(shared)
+        crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
         .server_plot_check_data_to_reload(input, render_plot_number)
         if(is.null(crop_data)) {
             return(NULL)
@@ -231,6 +237,8 @@
     brush <- input$plot_brush
     if(is.null(brush)) {
         zoom_range(NULL)
+    } else if(.server_plot_is_visible_datetime_plot(input)) {
+        zoom_range(c(brush$xmin, brush$xmax))
     } else {
         zoom_range(myClim:::.common_as_utc_posixct(c(brush$xmin, brush$xmax)))
     }
@@ -248,7 +256,11 @@
         return()
     }
     
-    shared$crop_range <- .server_plot_get_crop_range(input, shared, zoom_range)
+    if(.server_plot_is_visible_datetime_plot(input)) {
+        shared$crop_range <- .server_plot_get_crop_range_by_index(input, shared, zoom_range)
+    } else {
+        shared$crop_range <- .server_plot_get_crop_range(input, shared, zoom_range)
+    }
     last_datetime_range(shared$crop_range)
     if(refresh_plot) {
         render_plot_number(render_plot_number()+1)
@@ -280,10 +292,7 @@
     if(!is.null(zoom_range())) {
         crop_range <- zoom_range()
     }
-    if(!is.null(shared$last_crop_range_params$crop_range) &&
-       !is.null(shared$last_crop_range_params$selection_table) &&
-       isTRUE(all.equal(crop_range, shared$last_crop_range_params$crop_range)) &&
-       isTRUE(all.equal(shared$selection_table, shared$last_crop_range_params$selection_table))) {
+    if(.server_plot_is_shared_crop_range_correct(shared, crop_range)) {
         return(shared$crop_range)
     }
     shared$last_crop_range_params$crop_range <- crop_range
@@ -291,6 +300,28 @@
     filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
     crop_data <- myClim::mc_prep_crop(filter_data, crop_range[[1]], crop_range[[2]])
     return(.data_get_date_range(crop_data))
+}
+
+.server_plot_get_crop_range_by_index <- function(input, shared, zoom_range)
+{
+    crop_range <- c(1, Inf)
+    if(!is.null(zoom_range())) {
+        crop_range <- zoom_range()
+    }
+    if(.server_plot_is_shared_crop_range_correct(shared, crop_range)) {
+        return(shared$crop_range)
+    }
+    shared$last_crop_range_params$crop_range <- crop_range
+    shared$last_crop_range_params$selection_table <- shared$selection_table
+    
+    return(crop_range)
+}
+
+.server_plot_is_shared_crop_range_correct <- function(shared, crop_range) {
+    return(!is.null(shared$last_crop_range_params$crop_range) &&
+       !is.null(shared$last_crop_range_params$selection_table) &&
+       isTRUE(all.equal(crop_range, shared$last_crop_range_params$crop_range)) &&
+       isTRUE(all.equal(shared$selection_table, shared$last_crop_range_params$selection_table)))
 }
 
 .server_plot_set_selected_data <- function(input, shared)
@@ -408,10 +439,15 @@
     return(input$facet_select == .texts_plot_index_x)
 }
 
-.server_plot_get_data_to_plot <- function(shared) {
+.server_plot_get_data_to_plot <- function(shared, input) {
     crop_data <- NULL
     if(!is.null(shared$selection_table)) {
         filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
-        crop_data <- myClim::mc_prep_crop(filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
+        if(.server_plot_is_visible_datetime_plot(input)){
+            crop_data <- .data_crop_by_index_range(filter_data, shared$crop_range)
+        } else {
+            crop_data <- myClim::mc_prep_crop(filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
+        }
     }
+    return(crop_data)
 }

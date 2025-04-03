@@ -137,7 +137,13 @@
             ggplot2::geom_line(mapping = ggplot2::aes(color=.data$series)) +
             ggplot2::scale_color_manual(values=color_values) +
             ggplot2::scale_fill_manual(values=color_values) +
-            ggplot2::facet_grid(rows = ggplot_vars, scales=scales)
+            ggplot2::facet_grid(rows = ggplot_vars, scales=scales) +
+            ggplot2::theme(strip.text = ggplot2::element_text(angle = 90))
+    if(is_datetime) {
+        plot <- plot + ggplot2::theme(legend.position="none")
+    } else {
+        plot <- plot + ggplot2::theme(legend.position="bottom")
+    }
     return(plot)
 }
 
