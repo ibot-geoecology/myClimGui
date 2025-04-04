@@ -238,3 +238,18 @@
     data$localities <- purrr::map(data$localities, locality_function)
     return(data)
 }
+
+.data_get_max_index <- function(data) {
+    is_agg <- myClim:::.common_is_agg_format(data)
+
+    locality_function <- function(locality) {
+        if(is_agg) {
+            return(length(locality$datetime))
+        }
+        result_values <- purrr::map_int(locality$loggers, ~ length(.x$datetime))
+        return(max(result_values))
+    }
+
+    result_values <- purrr::map_int(data$localities, locality_function)
+    return(max(result_values))
+}

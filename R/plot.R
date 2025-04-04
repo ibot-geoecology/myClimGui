@@ -99,7 +99,7 @@
     return(rectangles)
 }
 
-.plot_loggers_x_index <- function(data, color_by_logger=FALSE, is_datetime) {
+.plot_loggers_x_index <- function(data, color_by_logger=FALSE, is_datetime, crop_range) {
     loggers_table <- myClim::mc_info_logger(data)
     localities <- unique(loggers_table$locality_id)
     if(length(localities) > 1) {
@@ -111,10 +111,10 @@
                                         physical="datetime",
                                         color="gray",
                                         main_axis=TRUE)
-        data_table <- .plot_loggers_x_index_datetime_table(data)
+        data_table <- .plot_loggers_x_index_datetime_table(data, crop_range)
     } else {
         sensors_table <- myClim:::.plot_get_sensors_table(data, "physical")
-        data_table <- .plot_loggers_x_index_data_table(data)
+        data_table <- .plot_loggers_x_index_data_table(data, crop_range)
     }
     if(color_by_logger && !is_datetime) {
         series <- unique(data_table$series)
@@ -147,11 +147,12 @@
     return(plot)
 }
 
-.plot_loggers_x_index_data_table <- function(data) {
+.plot_loggers_x_index_data_table <- function(data, crop_range) {
     logger_function <- function(logger) {
+        indexes <- .plot_get_logger_indexes(logger, crop_range)
         sensor_function <- function(sensor) {
             sensor_info <- myClim::mc_data_sensors[[sensor$metadata@sensor_id]]
-            result <- tibble::tibble(index=seq_along(logger$datetime),
+            result <- tibble::tibble(index=indexes,
                                      sensor_name=sensor$metadata@name,
                                      series=stringr::str_glue("{logger$metadata@name} {sensor$metadata@name}"),
                                      physical=sensor_info@physical,
@@ -166,9 +167,10 @@
     return(result)
 }
 
-.plot_loggers_x_index_datetime_table <- function(data) {
+.plot_loggers_x_index_datetime_table <- function(data, crop_range) {
     logger_function <- function(logger) {
-        datetime_table <- tibble::tibble(index=seq_along(logger$datetime),
+        indexes <- .plot_get_logger_indexes(logger, crop_range)
+        datetime_table <- tibble::tibble(index=indexes,
                                          sensor_name="datetime",
                                          series=stringr::str_glue("{logger$metadata@name} datetime"),
                                          physical="datetime",
@@ -178,4 +180,12 @@
     locality <- dplyr::first(data$localities)
     result <- purrr::map_dfr(locality$loggers, logger_function)
     return(result)
+}
+
+.plot_get_logger_indexes <- function(logger, crop_range) {
+    indexes <- seq(crop_range[[1]], crop_range[[2]])
+    if(length(indexes) > length(logger$datetime)) {
+        indexes <- indexes[seq_along(logger$datetime)]
+    }
+    return(indexes)
 }

@@ -29,7 +29,7 @@
     }, ignoreNULL = FALSE)
 
     shiny::observeEvent(input$plot_dblclick, {
-        .server_plot_dblclick_event(input, zoom_range, last_datetime_range)
+        .server_plot_dblclick_event(shared, input, zoom_range, last_datetime_range)
         .server_plot_change_selected_data(input, shared, last_datetime_range,
                                           zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
@@ -62,6 +62,7 @@
             return()
         }
         shared$crop_range <- NULL
+        zoom_range(NULL)
         .server_plot_change_selected_data(input, shared, last_datetime_range,
                                           zoom_range, last_filtered_data_table, render_plot_number, TRUE)
     })
@@ -72,7 +73,13 @@
             return()
         }
         shiny::isolate({
-            zoom_range(myClim:::.common_as_utc_posixct(c(d[["xaxis.range[0]"]], d[["xaxis.range[1]"]])))
+            if(.server_plot_is_visible_datetime_plot(input)) {
+                xmin <- ceiling(d[["xaxis.range[0]"]])
+                xmax <- floor(d[["xaxis.range[1]"]])
+                zoom_range(c(xmin, xmax))
+            } else {
+                zoom_range(myClim:::.common_as_utc_posixct(c(d[["xaxis.range[0]"]], d[["xaxis.range[1]"]])))
+            }
             .server_plot_change_selected_data(input, shared, last_datetime_range,
                                               zoom_range, last_filtered_data_table, render_plot_number, FALSE)
         })
@@ -91,13 +98,13 @@
             return(plotly::ggplotly(ggplot2::ggplot()))
         }
         crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data, shared$crop_range)
         if(is.null(plot)) {
             p <- plotly::ggplotly(ggplot2::ggplot())
         } else {
-            datetime_plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input))
+            datetime_plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input, shared$crop_range))
             if(!is.null(datetime_plot)) {
-                p <- plotly::subplot(plot, datetime_plot, nrows=length(plots), shareX = TRUE)
+                p <- plotly::subplot(datetime_plot, plot, nrows=2, shareX = TRUE)
             } else {
                 p <- plotly::ggplotly(plot)
             }
@@ -112,7 +119,7 @@
         }
         zoom_range_value <- zoom_range()
         crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data, shared$crop_range)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -132,7 +139,7 @@
         if(is.null(crop_data)) {
             return(NULL)
         }
-        plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input))
+        plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input, shared$crop_range))
         if(is.null(plot)) {
             return(NULL)
         }
@@ -233,12 +240,14 @@
     previous_sensors(input$sensor_select)
 }
 
-.server_plot_dblclick_event <- function(input, zoom_range, last_datetime_range) {
+.server_plot_dblclick_event <- function(shared, input, zoom_range, last_datetime_range) {
     brush <- input$plot_brush
     if(is.null(brush)) {
         zoom_range(NULL)
     } else if(.server_plot_is_visible_datetime_plot(input)) {
-        zoom_range(c(brush$xmin, brush$xmax))
+        xmin <- ceiling(brush$xmin)
+        xmax <- floor(brush$xmax)
+        zoom_range(c(xmin, xmax))
     } else {
         zoom_range(myClim:::.common_as_utc_posixct(c(brush$xmin, brush$xmax)))
     }
@@ -267,13 +276,13 @@
     }
 }
 
-.server_plot_render_plot_common <- function(session, input, render_plot_number, selected_data)
+.server_plot_render_plot_common <- function(session, input, render_plot_number, selected_data, crop_range)
 {
     .server_plot_check_data_to_reload(input, render_plot_number)
     if(is.null(selected_data)) {
         return(NULL)
     }
-    shiny::isolate(result <- .server_plot_get_plot(selected_data, input))
+    shiny::isolate(result <- .server_plot_get_plot(selected_data, input, crop_range))
     return(result)
 }
 
@@ -295,11 +304,15 @@
     if(.server_plot_is_shared_crop_range_correct(shared, crop_range)) {
         return(shared$crop_range)
     }
-    shared$last_crop_range_params$crop_range <- crop_range
-    shared$last_crop_range_params$selection_table <- shared$selection_table
     filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
     crop_data <- myClim::mc_prep_crop(filter_data, crop_range[[1]], crop_range[[2]])
-    return(.data_get_date_range(crop_data))
+    result_range <- .data_get_date_range(crop_data)
+    if(any(is.infinite(result_range))) {
+        return(shared$crop_range)
+    }
+    shared$last_crop_range_params$crop_range <- result_range
+    shared$last_crop_range_params$selection_table <- shared$selection_table
+    return(result_range)
 }
 
 .server_plot_get_crop_range_by_index <- function(input, shared, zoom_range)
@@ -311,6 +324,19 @@
     if(.server_plot_is_shared_crop_range_correct(shared, crop_range)) {
         return(shared$crop_range)
     }
+
+    filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
+    max_index <- .data_get_max_index(filter_data)
+    if(crop_range[[2]] > max_index) {
+        crop_range[[2]] <- max_index
+    }
+    if(crop_range[[1]] < 1) {
+        crop_range[[1]] <- 1
+    }
+    if(crop_range[[1]] > crop_range[[2]]) {
+        return(shared$crop_range)
+    }
+
     shared$last_crop_range_params$crop_range <- crop_range
     shared$last_crop_range_params$selection_table <- shared$selection_table
     
@@ -342,12 +368,12 @@
     }
 }
 
-.server_plot_get_plot <- function(data, input)
+.server_plot_get_plot <- function(data, input, crop_range)
 {
     selected_facet_text <- input$facet_select
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
     if(selected_facet_text == .texts_plot_index_x) {
-        result <- .plot_loggers_x_index(data, color_by_logger, is_datetime=FALSE)
+        result <- .plot_loggers_x_index(data, color_by_logger, is_datetime=FALSE, crop_range=crop_range)
     } else {
         facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
         tag <- if(input$plot_tag_select %in% c("", .texts_plot_no_tag_value)) NULL else input$plot_tag_select
@@ -426,12 +452,12 @@
     shiny::updateSelectInput(session, "plot_tag_select", choices=choices)
 }
 
-.server_plot_get_datetime_plot <- function(data, input) {
+.server_plot_get_datetime_plot <- function(data, input, crop_range) {
     if(!.server_plot_is_visible_datetime_plot(input)) {
         return(NULL)
     }
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
-    datetime_plot <- .plot_loggers_x_index(data, color_by_logger, is_datetime=TRUE)
+    datetime_plot <- .plot_loggers_x_index(data, color_by_logger, is_datetime=TRUE, crop_range=crop_range)
     return(datetime_plot)
 }
 
