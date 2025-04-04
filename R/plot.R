@@ -183,6 +183,9 @@
 }
 
 .plot_get_logger_indexes <- function(logger, crop_range) {
+    if(is.null(crop_range)) {
+        return(seq_along(logger$datetime))
+    }
     indexes <- seq(crop_range[[1]], crop_range[[2]])
     if(length(indexes) > length(logger$datetime)) {
         indexes <- indexes[seq_along(logger$datetime)]

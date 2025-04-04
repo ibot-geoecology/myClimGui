@@ -198,6 +198,22 @@
     return(result)
 }
 
+.data_get_dataview_table_index <- function(data, selection_table, start_index, end_index) {
+    filter_data <- .data_filter_by_selection_table(data, selection_table)
+    min_start_index <- min(start_index)
+    max_start_index <- max(end_index)
+    crop_data <- .data_crop_by_index_range(filter_data, c(min_start_index, max_start_index))
+    result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
+    result <- tibble::add_column(result, index = seq(min_start_index, max_start_index), .before = 1)
+    if(length(start_index) > 1) {
+        conditions <- purrr::map(seq_along(start_index, ~ result$index >= start_index[[.x]] & result$index <= end_index[[.x]]))
+        index_condition <- purrr::reduce(conditions, `|`)
+        result <- dplyr::filter(result, index_condition)
+    }
+    result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
+    return(result)
+}
+
 .data_get_all_tags <- function(data) {
     result <- unique(myClim::mc_info_states(data)$tag)
     result <- sort(result)
