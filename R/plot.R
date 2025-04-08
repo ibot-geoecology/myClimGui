@@ -141,6 +141,14 @@
             ggplot2::theme(strip.text = ggplot2::element_text(angle = 90))
     if(is_datetime) {
         plot <- plot + ggplot2::theme(legend.position="none")
+        datetimes <- data_table$value
+        next_datetimes <- c(data_table$value[-1], data_table$value[length(data_table$value)] + lubridate::seconds(1))
+        datetime_issues <- datetimes >= next_datetimes
+        if(any(datetime_issues)) {
+            plot <- plot + ggplot2::geom_point(data=data_table[datetime_issues, ],
+                                               mapping=ggplot2::aes(x=.data$index, y=.data$value),
+                                               color="red", size=0.5)
+        }
     } else {
         plot <- plot + ggplot2::theme(legend.position="bottom")
     }
