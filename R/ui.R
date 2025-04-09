@@ -41,7 +41,7 @@
         shiny::navbarPage("myClimGui",
                           .ui_plot_tab(shared),
                           .ui_states_tab(shared),
-                          .ui_data_tab(sahred),
+                          .ui_data_tab(shared),
                           id="navbar_page"))
 }
 

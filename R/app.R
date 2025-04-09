@@ -122,6 +122,7 @@ mcg_run_bg <- function (data, port=1151, stdout=NULL, stderr=NULL) {
                                           selection_table = NULL,
                                           is_init_facet = TRUE)
     result$is_uncleaned_raw <- myClim:::.common_is_raw_format(data) && !myClim:::.prep_is_datetime_step_processed_in_object(data)
+    result$delete_table <- tibble::tribble(~locality_id, ~logger_name, ~raw_index)
     .app_shared_load_tags_if_need(result)
     return(result)
 }

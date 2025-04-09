@@ -18,9 +18,9 @@
 # plot
 .texts_plot_no_tag <- "No visible tag"
 .texts_plot_no_tag_value <- " "
-.texts_plot_save_states <- "Save states"
 .texts_plot_filter_by_plot <- "Filter by plot"
 .texts_plot_index_x <- "index as x"
+.texts_plot_multi_localities_error <- "In uncleaned raw data, only one locality can be selected."
 
 # states
 .texts_states_delete_states_question <- "Delete {count_states} states?"
@@ -30,4 +30,10 @@
 .texts_states_not_correct_range_notification <- "The date range isn't selected correctly!"
 .texts_states_not_selected_states_notification <- "There isn't selected any state!"
 .texts_states_not_selected_range <- "There isn't selected date range!"
+.texts_states_save_button <- "Save states"
 
+# data
+.texts_data_delete <- "Selected to delete"
+.texts_data_delete <- "Selected to delete"
+.texts_data_multi_loggers_error <- "In uncleaned raw data, only one logger can be selected."
+.texts_data_save_button <- "Save delete table"

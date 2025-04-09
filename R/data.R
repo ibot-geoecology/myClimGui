@@ -183,12 +183,10 @@
 }
 
 .data_get_dataview_table <- function(data, selection_table, intervals) {
-    filter_data <- .data_filter_by_selection_table(data, selection_table)
     start_datetime <- min(lubridate::int_start(intervals))
     end_datetime <- max(lubridate::int_end(intervals))
-    crop_data <- myClim::mc_prep_crop(filter_data, start_datetime, end_datetime)
+    result <- .data_get_wide_table(data, selection_table, start_datetime, end_datetime)
     is_agg <- myClim:::.common_is_agg_format(data)
-    result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
     if(length(intervals) > 1) {
         conditions <- purrr::map(intervals, ~ lubridate::`%within%`(result$datetime, .x))
         datetime_condition <- purrr::reduce(conditions, `|`)
@@ -198,18 +196,32 @@
     return(result)
 }
 
-.data_get_dataview_table_index <- function(data, selection_table, start_index, end_index) {
-    filter_data <- .data_filter_by_selection_table(data, selection_table)
-    min_start_index <- min(start_index)
-    max_start_index <- max(end_index)
-    crop_data <- .data_crop_by_index_range(filter_data, c(min_start_index, max_start_index))
-    result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
-    result <- tibble::add_column(result, index = seq(min_start_index, max_start_index), .before = 1)
-    if(length(start_index) > 1) {
-        conditions <- purrr::map(seq_along(start_index, ~ result$index >= start_index[[.x]] & result$index <= end_index[[.x]]))
-        index_condition <- purrr::reduce(conditions, `|`)
-        result <- dplyr::filter(result, index_condition)
+.data_get_wide_table <- function(data, selection_table, start_datetime=NULL, end_datetime=NULL,
+                                 start_index=NULL, end_index=NULL) {
+    if(is.null(selection_table)) {
+        filter_data <- data
+    } else {
+        filter_data <- .data_filter_by_selection_table(data, selection_table)
     }
+    if(!is.null(start_datetime) && !is.null(end_datetime)) {
+        crop_data <- myClim::mc_prep_crop(filter_data, start=start_datetime, end=end_datetime)
+    } else if(!is.null(start_index) && !is.null(end_index)) {
+        crop_data <- .data_crop_by_index_range(filter_data, c(start_index, end_index))
+    } else {
+        crop_data <- filter_data
+    }
+    result <- myClim::mc_reshape_wide(crop_data, show_logger_name=TRUE)
+    if(length(crop_data$localities) == 1 && length(crop_data$localities[[1]]$loggers) == 1) {
+        logger <- crop_data$localities[[1]]$loggers[[1]]
+        if(!any(is.na(logger$metadata@raw_index))) {
+            result <- tibble::add_column(result, index = logger$metadata@raw_index, .before = 1)
+        }
+    }
+    return(result)
+}
+
+.data_get_dataview_table_index <- function(data, start_index, end_index) {
+    result <- .data_get_wide_table(data, NULL, start_index=start_index, end_index=end_index)
     result$datetime <- format(result$datetime, "%Y-%m-%d %H:%M:%S")
     return(result)
 }
@@ -225,29 +237,16 @@
         return(data)
     }
 
-    is_agg <- myClim:::.common_is_agg_format(data)
-
-    sensor_function <- function(sensor, indexes) {
-        sensor$values <- sensor$values[indexes]
-        return(sensor)
-    }
-
-    sensors_item_function <- function(item) {
-        indexes <- seq_along(item$datetime)
-        indexes <- indexes[indexes >= index_range[1] &
-                           indexes <= index_range[2]]
-        item$datetime <- item$datetime[indexes]
-        item$sensors <- purrr::map(item$sensors, ~ sensor_function(.x, indexes))
-        return(item)
+    logger_function <- function(logger) {
+        table <- myClim:::.prep_get_logger_table_with_index(logger)
+        table <- dplyr::filter(table, (.data$raw_index__ >= index_range[1]) &
+                               (.data$raw_index__ <= index_range[2]))
+        logger <- myClim:::.prep_load_logger_values_from_table(logger, table)
+        return(logger)
     }
 
     locality_function <- function(locality) {
-        if(is_agg) {
-            locality <- sensors_item_function(locality)
-        }
-        else {
-            locality$loggers <- purrr::map(locality$loggers, sensors_item_function)
-        }
+        locality$loggers <- purrr::map(locality$loggers, logger_function)
         return(locality)
     }
 

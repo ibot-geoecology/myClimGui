@@ -10,7 +10,7 @@
                 width = 5,
             ),
             shiny::column(
-                shiny::actionButton("save_states_button", .texts_plot_save_states),
+                shiny::actionButton("save_states_button", .texts_states_save_button),
                 width = 2,
                 style="padding-right: 0px; text-align: right; ",
             ),

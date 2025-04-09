@@ -20,7 +20,7 @@ RoxygenNote: 7.3.2
 Depends:
     R (>= 3.5)
 Imports:
-    myClim (>= 1.3.8),
+    myClim (>= 1.4.2),
     shiny,
     shinyjs,
     shinyTree,

@@ -98,11 +98,11 @@
             return(plotly::ggplotly(ggplot2::ggplot()))
         }
         crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data, shared$crop_range)
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
             p <- plotly::ggplotly(ggplot2::ggplot())
         } else {
-            datetime_plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input, shared$crop_range))
+            datetime_plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input))
             if(!is.null(datetime_plot)) {
                 p <- plotly::subplot(datetime_plot, plot, nrows=2, shareX = TRUE)
             } else {
@@ -119,7 +119,7 @@
         }
         zoom_range_value <- zoom_range()
         crop_data <- shiny::isolate(.server_plot_get_data_to_plot(shared, input))
-        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data, shared$crop_range)
+        plot <- .server_plot_render_plot_common(session, input, render_plot_number, crop_data)
         if(is.null(plot)) {
             return(NULL)
         }
@@ -139,7 +139,7 @@
         if(is.null(crop_data)) {
             return(NULL)
         }
-        plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input, shared$crop_range))
+        plot <- shiny::isolate(.server_plot_get_datetime_plot(crop_data, input))
         if(is.null(plot)) {
             return(NULL)
         }
@@ -276,13 +276,13 @@
     }
 }
 
-.server_plot_render_plot_common <- function(session, input, render_plot_number, selected_data, crop_range)
+.server_plot_render_plot_common <- function(session, input, render_plot_number, selected_data)
 {
     .server_plot_check_data_to_reload(input, render_plot_number)
     if(is.null(selected_data)) {
         return(NULL)
     }
-    shiny::isolate(result <- .server_plot_get_plot(selected_data, input, crop_range))
+    shiny::isolate(result <- .server_plot_get_plot(selected_data, input))
     return(result)
 }
 
@@ -368,12 +368,12 @@
     }
 }
 
-.server_plot_get_plot <- function(data, input, crop_range)
+.server_plot_get_plot <- function(data, input)
 {
     selected_facet_text <- input$facet_select
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
     if(selected_facet_text == .texts_plot_index_x) {
-        result <- .plot_loggers_x_index(data, color_by_logger, is_datetime=FALSE, crop_range=crop_range)
+        result <- .plot_loggers_x_index(data, color_by_logger, is_datetime=FALSE)
     } else {
         facet <- if(selected_facet_text == "NULL") NULL else selected_facet_text
         tag <- if(input$plot_tag_select %in% c("", .texts_plot_no_tag_value)) NULL else input$plot_tag_select
@@ -452,12 +452,12 @@
     shiny::updateSelectInput(session, "plot_tag_select", choices=choices)
 }
 
-.server_plot_get_datetime_plot <- function(data, input, crop_range) {
+.server_plot_get_datetime_plot <- function(data, input) {
     if(!.server_plot_is_visible_datetime_plot(input)) {
         return(NULL)
     }
     color_by_logger <- .server_plot_selected_settings(input, .app_const_SETTINGS_COLOR_BY_LOGGER_KEY)
-    datetime_plot <- .plot_loggers_x_index(data, color_by_logger, is_datetime=TRUE, crop_range=crop_range)
+    datetime_plot <- .plot_loggers_x_index(data, color_by_logger, is_datetime=TRUE)
     return(datetime_plot)
 }
 
@@ -470,6 +470,10 @@
     if(!is.null(shared$selection_table)) {
         filter_data <- .data_filter_by_selection_table(shared$data, shared$selection_table)
         if(.server_plot_is_visible_datetime_plot(input)){
+            if(length(filter_data$localities) > 1) {  
+                shiny::showNotification(.texts_plot_multi_localities_error)
+                return(NULL)
+            }
             crop_data <- .data_crop_by_index_range(filter_data, shared$crop_range)
         } else {
             crop_data <- myClim::mc_prep_crop(filter_data, shared$crop_range[[1]], shared$crop_range[[2]])
