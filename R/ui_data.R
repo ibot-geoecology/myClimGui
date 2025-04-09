@@ -3,11 +3,9 @@
     if(shared$is_uncleaned_raw) {
         delete_fluid_row <- shiny::fluidRow(
             shiny::column(
-                shiny::actionButton("delete_states_button", .texts_data_delete),
-                width = 2,
-            ),
-            shiny::column(
-                width = 5,
+                shiny::actionButton("delete_index_button", .texts_data_delete),
+                shiny::actionButton("restore_index_button", .texts_data_restore),
+                width = 7,
             ),
             shiny::column(
                 shiny::actionButton("save_delete_table_button", .texts_data_save_button),

@@ -135,7 +135,7 @@
     shiny::observeEvent(input$save_states_button, {
         states_table <- myClim::mc_info_states(shared$data)
         saveRDS(states_table, input$file_states_textinput)
-        shiny::showNotification(stringr::str_glue("States saved to {input$file_states_textinput}"))
+        shiny::showNotification(stringr::str_glue(.texts_states_file_saved))
     })
 
     # Update start and end date and time inputs by changed selected_range_value

@@ -31,9 +31,11 @@
 .texts_states_not_selected_states_notification <- "There isn't selected any state!"
 .texts_states_not_selected_range <- "There isn't selected date range!"
 .texts_states_save_button <- "Save states"
+.texts_states_file_saved <- "States saved to {input$file_states_textinput}"
 
 # data
-.texts_data_delete <- "Selected to delete"
-.texts_data_delete <- "Selected to delete"
+.texts_data_delete <- "Delete selected"
+.texts_data_restore <- "Restore selected"
 .texts_data_multi_loggers_error <- "In uncleaned raw data, only one logger can be selected."
 .texts_data_save_button <- "Save delete table"
+.texts_data_file_saved <- "Delete table saved to {input$file_delete_textinput}"
