@@ -70,8 +70,14 @@
         editors_range <- .server_states_get_range_from_editors(input)
         start <- editors_range[[1]]
         end <- editors_range[[2]]
+        if(is.na(start) || is.na(end)) {
+            shiny::showNotification(.texts_states_not_correct_range_notification, type = "error")
+            return()
+        }
+        start_text <- format(start, "%Y-%m-%d %H:%M:%S")
+        end_text <- format(end, "%Y-%m-%d %H:%M:%S")
         table_range <- range(edit_range_table_value()$datetime)
-        if(is.na(start) || is.na(end) || start > end || start > table_range[[2]] || end < table_range[[1]]) {
+        if(start_text > end_text || start_text > table_range[[2]] || end_text < table_range[[1]]) {
             shiny::showNotification(.texts_states_not_correct_range_notification, type = "error")
             return()
         }
