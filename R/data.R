@@ -41,15 +41,27 @@
 }
 
 .data_edit_states <- function(data, changed_table, new_values) {
-    changed_table$edit <- TRUE
-    states_table <- myClim::mc_info_states(data)
-    columns <- colnames(states_table)
-    states_table <- dplyr::left_join(states_table, changed_table, by=columns)
-    states_table$edit[is.na(states_table$edit)] <- FALSE
-    for(name in names(new_values)) {
-        states_table[states_table$edit, name] <- new_values[[name]]
+    result_env <- new.env()
+    result_env$data <- data
+
+    group_function <- function(.x, key_table) {
+        sensor <- result_env$data$localities[[key_table$locality_id]]$loggers[[key_table$logger_name]]$sensors[[key_table$sensor_name]]
+        .x$edit <- TRUE
+        states_table <- sensor$states
+        columns <- colnames(states_table)
+        states_table <- dplyr::left_join(states_table, .x, by=columns)
+        states_table$edit[is.na(states_table$edit)] <- FALSE
+        for(name in names(new_values)) {
+            states_table[states_table$edit, name] <- new_values[[name]]
+        }
+        states_table <- dplyr::select(states_table, -dplyr::any_of("edit"))
+        result_env$data$localities[[key_table$locality_id]]$loggers[[key_table$logger_name]]$sensors[[key_table$sensor_name]]$states <- states_table
     }
-    return(myClim::mc_states_update(data, dplyr::select(states_table, columns)))
+
+    changed_table <- dplyr::group_by(changed_table, .data$locality_id, .data$logger_name, .data$sensor_name)
+    dplyr::group_walk(changed_table, group_function)
+
+    return(result_env$data)
 }
 
 .data_delete_states <- function(data, delete_table) {
@@ -183,11 +195,15 @@
 }
 
 .data_get_dataview_table <- function(data, selection_table, intervals) {
-    start_datetime <- min(lubridate::int_start(intervals))
-    end_datetime <- max(lubridate::int_end(intervals))
+    start_datetime <- NULL
+    end_datetime <- NULL
+    if(!is.null(intervals)) {
+        start_datetime <- min(lubridate::int_start(intervals))
+        end_datetime <- max(lubridate::int_end(intervals))
+    }
     result <- .data_get_wide_table(data, selection_table, start_datetime, end_datetime)
     is_agg <- myClim:::.common_is_agg_format(data)
-    if(length(intervals) > 1) {
+    if(!is.null(intervals) && length(intervals) > 1) {
         conditions <- purrr::map(intervals, ~ lubridate::`%within%`(result$datetime, .x))
         datetime_condition <- purrr::reduce(conditions, `|`)
         result <- dplyr::filter(result, datetime_condition)

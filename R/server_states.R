@@ -8,11 +8,6 @@
     action_selected_rows <- shiny::reactiveVal()
     selected_range_value <- shiny::reactiveVal(list(is_init=TRUE, value=NULL))
         
-    shiny::observeEvent(input$states_table_cell_edit, {
-        shared$data <- .server_states_edit_text_cells(shared$data, input$states_table_cell_edit, states_table_value()$table)
-        .server_states_reload_data_after_edit(input, session, shared, states_table_value)
-    })
-    
     shiny::observeEvent(input$edit_state_button, {
         selected_rows <- input$states_table_rows_selected
         if(length(selected_rows) == 0) {
@@ -207,7 +202,7 @@
             return(NULL)
         }
         df_states <- .server_states_get_filtered_dataframe(states_table_value, input$tag_select)
-        return(.server_states_get_table_for_dt(df_states, !shared$is_uncleaned_raw))
+        return(.server_states_get_table_for_dt(df_states))
     }, server = FALSE)
     
     output$states_plotly <- plotly::renderPlotly({
@@ -263,19 +258,14 @@
     })
 }
 
-.server_states_get_table_for_dt <- function(states_table, is_editable) {
+.server_states_get_table_for_dt <- function(states_table) {
     states_table$start <- format(states_table$start, "%Y-%m-%d %H:%M:%S")
     states_table$end <- format(states_table$end, "%Y-%m-%d %H:%M:%S")
-    editable <- NULL
-    if(is_editable) {
-        editable <- list(target = "cell", disable = list(columns = c(1, 2, 3, 5, 6)))
-    }
     result <-DT::datatable(states_table,
                            selection = "none", #list(target="row", selected=selected_rows),
                            options = list(pageLength = 10,
                                           select = list(style = "os", items = "row")),
-                           extensions = c('Select'),
-                           editable = editable)
+                           extensions = c('Select'))
     return(result)
 }
 
@@ -318,7 +308,10 @@
     states_table <- states_table[selected_rows, ]
     selection_table <- dplyr::select(states_table, "locality_id", "logger_name", "sensor_name")
     selection_table <- dplyr::distinct(selection_table)
-    crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
+    crop_interval <- NULL
+    if(!is.null(shared$crop_range)) {
+        crop_interval <- lubridate::interval(shared$crop_range[[1]], shared$crop_range[[2]])
+    }
     result <- .data_get_dataview_table(shared$data, selection_table, crop_interval)
     return(result)
 }
@@ -392,17 +385,6 @@
                                         shiny::br(),
                                         shiny::br(),
                                         DT::dataTableOutput("edit_range_table")))
-}
-
-.server_states_edit_text_cells <- function(data, edit_table, selected_states_table) {
-    row_index <- edit_table$row[[1]]
-    changed_row <- selected_states_table[row_index, ]
-    column_index <- edit_table$col[[1]]
-    column_name <- colnames(changed_row)[[column_index]]
-    new_values <- list()
-    new_values[[column_name]] <- edit_table$value
-    result <- .data_edit_states(data, changed_row, new_values)
-    return(result)
 }
 
 .server_states_edit_form <- function(data, changed_table, start, end, input) {

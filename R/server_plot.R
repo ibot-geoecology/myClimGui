@@ -114,6 +114,7 @@
     })
 
     output$plot_ggplot <- shiny::renderPlot({
+        render_plot_number()
         if(shiny::isolate(.server_plot_is_plotly(input))) {
             return(NULL)
         }
@@ -127,6 +128,7 @@
     }, res=96)
 
     output$datetime_plot_ggplot <- shiny::renderPlot({
+        render_plot_number()
         if(shiny::isolate(.server_plot_is_plotly(input))) {
             return(NULL)
         }
@@ -258,10 +260,12 @@
     shiny::isolate(.server_plot_set_selected_data(input, shared))
     if(is.null(shared$selection_table)) {
         shared$crop_range <- NULL
+        last_datetime_range(shared$crop_range)
         return()
     }
     if(.server_plot_reset_zoom_range_if_need(shared$selection_table, last_filtered_data_table, zoom_range)) {
         shared$crop_range <- NULL
+        last_datetime_range(shared$crop_range)
         return()
     }
     
