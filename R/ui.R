@@ -31,6 +31,8 @@
                 }
             });
             ')),    
+        shiny::tags$style(type="text/css",
+            ".modal-dialog { width: fit-content !important; max-width: 100% !important; }"),
         shiny::actionButton("return_button", "Return", icon = shiny::icon("door-open"),
                             style = "position: absolute; top: 8px; right: 8px; z-index:10000;"),
         shiny::tagAppendAttributes(

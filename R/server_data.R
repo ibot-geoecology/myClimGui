@@ -26,8 +26,12 @@
     })
 
     shiny::observeEvent(input$save_delete_table_button, {
-        saveRDS(shared$delete_table, input$file_delete_textinput)
-        shiny::showNotification(stringr::str_glue(.texts_data_file_saved))
+        tryCatch({
+            saveRDS(shared$delete_table, input$file_delete_textinput)
+            shiny::showNotification(stringr::str_glue(.texts_data_file_saved))
+        }, error = function(e) {
+            shiny::showNotification(e$message, type = "error")
+        })
     })
 
     output$data_table <- DT::renderDataTable({

@@ -4,6 +4,7 @@
 * The check condition for the states range has been fixed.
 * The State values can be edited only in form.
 * The edit states process is faster.
+* The edit states form width is increased by content.
 
 # myClimGui 1.1.4
 * The init selected tag issue has been fixed.
