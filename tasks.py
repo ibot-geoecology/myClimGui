@@ -44,3 +44,10 @@ def test(c):
 @task
 def run_dev(c):
     c.run("""R -e 'devtools::load_all(); mcg_run(myClim::mc_data_example_raw, port=8989)'""")
+
+@task
+def push_all(c):
+    c.run("""git push""", pty=True, echo=True)
+    c.run("""git push --tags""", pty=True, echo=True)
+    c.run("""git push github""", pty=True, echo=True)
+    c.run("""git push github --tags""", pty=True, echo=True)
