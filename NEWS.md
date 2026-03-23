@@ -1,3 +1,6 @@
+# myClimGui 1.1.6
+* The plot zoom issue has been fixed.
+
 # myClimGui 1.1.5
 * Plot type 'index as x' has been added.
 * It is possible create delete table for `myClim::mc_prep_delete` function.

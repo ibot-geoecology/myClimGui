@@ -1,7 +1,7 @@
 Package: myClimGui
 Type: Package
 Title: GUI fo myClim package
-Version: 1.1.5
+Version: 1.1.6
 Authors@R: c(
     person("Matěj", "Man", email = "Matej.Man@ibot.cas.cz", role = "aut"),
     person("Vojtěch", "Kalčík", email = "Vojtech.Kalcik@ibot.cas.cz", role = c("aut", "cre")),
@@ -16,7 +16,7 @@ Description: GUI for myClim package. You can visualize and explore data series.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends:
     R (>= 3.5)
 Imports:

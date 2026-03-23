@@ -7,8 +7,8 @@
     } else {
         table <- myClim::mc_info_logger(data)
     }
-    start_date <- min(table$start_date)
-    end_date <- max(table$end_date)
+    start_date <- min(table$start_date, na.rm = TRUE)
+    end_date <- max(table$end_date, na.rm = TRUE)
     if(!is.null(round)) {
         start_date <- lubridate::floor_date(start_date, unit=round)
         end_date <- lubridate::floor_date(end_date, unit=round)
