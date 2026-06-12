@@ -31,7 +31,9 @@
     info <- dplyr::select(info, "locality_id", "logger_type")
     info <- dplyr::distinct(info)
     items <- purrr::map2(info$locality_id, info$logger_type, ~ c(.x, .y))
-    names(items) <- paste0(info$locality_id, ": ", info$logger_type)
+    logger_type_texts <- info$logger_type
+    logger_type_texts[is.na(logger_type_texts)] <- "unknown"
+    names(items) <- paste0(info$locality_id, ": ", logger_type_texts)
     return(as.environment(items))
 }
 
@@ -148,7 +150,11 @@
 
     filtered_data <- myClim::mc_filter(data, localities=locality)
     loggers_table <- myClim::mc_info_logger(filtered_data)
-    loggers_table <- dplyr::filter(loggers_table, .data$logger_type == logger_type_value)
+    if(is.na(logger_type_value)) {
+        loggers_table <- dplyr::filter(loggers_table, is.na(.data$logger_type))
+    } else {
+        loggers_table <- dplyr::filter(loggers_table, .data$logger_type == logger_type_value)
+    }
     loggers_table <- dplyr::select(loggers_table, "locality_id", "logger_name")
 
     result <- purrr::pmap_dfr(loggers_table, logger_function)

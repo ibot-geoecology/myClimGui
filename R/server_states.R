@@ -292,6 +292,15 @@
         selection_table <- shared$selection_table
         filter_data <- myClim::mc_filter(shared$data, localities = unique(selection_table$locality_id))
         result <- myClim::mc_info_states(filter_data)
+        if(ncol(result) == 0) {
+            result <- tibble::tibble(locality_id=character(),
+                                     logger_name=character(),
+                                     sensor_name=character(),
+                                     tag=character(),
+                                     start=as.POSIXct(character()),
+                                     end=as.POSIXct(character()),
+                                     value=character())
+        }
         selection_table$selected <- TRUE
         result <- dplyr::left_join(result, selection_table, by=c("locality_id", "logger_name", "sensor_name"))
         result <- dplyr::filter(result, !is.na(.data$selected))

@@ -1,3 +1,7 @@
+# myClimGui 1.1.7
+* Handling of `NA` values in `logger_type` has been improved.
+* The result structure in state retrieval is now ensured.
+
 # myClimGui 1.1.6
 * The plot zoom issue has been fixed.
 
